@@ -1,0 +1,12 @@
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart
+*.freezed.dart
+lib/l10n/app_localizations*.dart
+.DS_Store
+.idea/
+*.iml
+devtools_options.yaml
