@@ -1,0 +1,55 @@
+name: Build Windows
+
+# Runs on a Windows GitHub-hosted runner, since the Windows desktop build
+# target requires the MSVC/Visual Studio toolchain and cannot be
+# cross-compiled from macOS/Linux.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.5"
+          channel: "stable"
+          cache: true
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code (freezed / drift)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Package build output
+        shell: pwsh
+        run: |
+          $dest = "build/windows/x64/runner/Release"
+          Compress-Archive -Path "$dest/*" -DestinationPath "BOZKRI-windows.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BOZKRI-windows
+          path: BOZKRI-windows.zip
+          retention-days: 30
