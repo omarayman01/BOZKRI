@@ -93,7 +93,7 @@ class SyncEngine {
       final Map<String, List<Map<String, dynamic>>> remoteRows =
           <String, List<Map<String, dynamic>>>{};
       for (final String table in _tableOrder) {
-        remoteRows[table] = await _client.from(table).select();
+        remoteRows[table] = await _fetchAllRows(table);
       }
 
       await _db.transaction(() async {
@@ -124,6 +124,30 @@ class SyncEngine {
       errors.add(e.toString());
     }
     return SyncResult(pushed: pushed, pulled: pulled, errors: errors);
+  }
+
+  /// Fetches every row of [table], paging through Supabase's REST API
+  /// instead of one plain `.select()` — PostgREST caps an unranged select to
+  /// a default row limit (commonly 1000, configurable per-project), so once
+  /// a table like `transactions` or `payments` grows past that, a plain
+  /// select would silently truncate and a device syncing for the first time
+  /// (or after being offline a while) would end up missing rows with no
+  /// error at all. Keeps requesting pages until an empty one comes back,
+  /// rather than stopping as soon as a page is "short" — a page can be
+  /// shorter than requested purely because of the server's own per-request
+  /// cap, not because there's no more data.
+  Future<List<Map<String, dynamic>>> _fetchAllRows(String table) async {
+    const int pageSize = 1000;
+    final List<Map<String, dynamic>> all = <Map<String, dynamic>>[];
+    int from = 0;
+    while (true) {
+      final List<Map<String, dynamic>> page =
+          await _client.from(table).select().range(from, from + pageSize - 1);
+      if (page.isEmpty) break;
+      all.addAll(page);
+      from += page.length;
+    }
+    return all;
   }
 
   /// Runs one table's push function, catching any failure so it can't stop
