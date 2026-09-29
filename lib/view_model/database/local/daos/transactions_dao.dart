@@ -393,6 +393,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     String? commissionName,
     double? commissionAmount,
     String? paymentStatusOverride,
+    String? updatedBy,
   }) {
     return transaction(() async {
       if (lines.isEmpty) {
@@ -421,6 +422,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           commissionName: Value<String?>(commissionName),
           commissionAmount: Value<double?>(commissionAmount),
           paymentStatusOverride: Value<String?>(paymentStatusOverride),
+          updatedBy: Value<String?>(updatedBy),
         ),
       );
 
@@ -516,6 +518,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     String? commissionName,
     double? commissionAmount,
     String? paymentStatusOverride,
+    String? updatedBy,
   }) {
     return transaction(() async {
       if (lines.isEmpty) {
@@ -601,6 +604,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
               ? const Value<DateTime>.absent()
               : Value<DateTime>(dateTime),
           updatedAt: Value<DateTime>(DateTime.now()),
+          updatedBy: Value<String?>(updatedBy),
         ),
       );
 

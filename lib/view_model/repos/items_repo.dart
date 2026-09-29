@@ -22,6 +22,7 @@ abstract class ItemsRepo {
     String? notes,
     bool isActive,
     Map<int, String> fieldValues,
+    String? updatedBy,
   });
 
   Future<void> updateItem({
@@ -37,6 +38,7 @@ abstract class ItemsRepo {
     String? notes,
     required bool isActive,
     Map<int, String> fieldValues,
+    String? updatedBy,
   });
 
   Future<void> deleteItem(int id);

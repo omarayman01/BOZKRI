@@ -15,8 +15,9 @@ abstract class ClientsRepo {
     bool isActive,
     String? passportId,
     String? nationalId,
+    String? updatedBy,
   });
-  Future<void> updateClient(ClientModel client);
+  Future<void> updateClient(ClientModel client, {String? updatedBy});
   Future<void> deleteClient(int id);
 
   Future<List<TransactionModel>> getClientTransactions(int clientId);

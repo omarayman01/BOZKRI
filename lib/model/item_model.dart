@@ -21,6 +21,8 @@ class ItemModel with _$ItemModel {
     String? notes,
     @Default(true) bool isActive,
     required DateTime createdAt,
+    DateTime? updatedAt,
+    String? updatedBy,
     @Default(<ItemFieldValueModel>[]) List<ItemFieldValueModel> fieldValues,
     String? itemTypeName,
     String? supplierName,

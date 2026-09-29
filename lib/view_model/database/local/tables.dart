@@ -18,6 +18,11 @@ class Suppliers extends Table {
   DateTimeColumn get updatedAt =>
       dateTime().nullable().clientDefault(() => DateTime.now())();
 
+  /// Supabase profile id (uuid) of whoever last wrote this row — set locally
+  /// on every insert/update, and kept in sync by the pull side of the sync
+  /// engine for rows another device changed.
+  TextColumn get updatedBy => text().nullable()();
+
   /// True only for the single seeded "بوزكري (بدون مورد)" row — the
   /// placeholder supplier a car is assigned to when it has no real
   /// supplier. Never admin-created, renamed, or deleted.
@@ -41,6 +46,9 @@ class Clients extends Table {
 
   DateTimeColumn get updatedAt =>
       dateTime().nullable().clientDefault(() => DateTime.now())();
+
+  /// Supabase profile id (uuid) of whoever last wrote this row.
+  TextColumn get updatedBy => text().nullable()();
 }
 
 // ---------------------------------------------------------------------------
@@ -99,6 +107,9 @@ class Items extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt =>
       dateTime().nullable().clientDefault(() => DateTime.now())();
+
+  /// Supabase profile id (uuid) of whoever last wrote this row.
+  TextColumn get updatedBy => text().nullable()();
 }
 
 /// One value per (item, field). Stored as text, interpreted by the field type.
@@ -148,6 +159,9 @@ class Transactions extends Table {
 
   DateTimeColumn get updatedAt =>
       dateTime().nullable().clientDefault(() => DateTime.now())();
+
+  /// Supabase profile id (uuid) of whoever last wrote this row.
+  TextColumn get updatedBy => text().nullable()();
 }
 
 /// unitCost / unitPrice are immutable snapshots captured at deal time.

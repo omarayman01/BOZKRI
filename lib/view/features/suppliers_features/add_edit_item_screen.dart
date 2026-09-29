@@ -8,6 +8,7 @@ import '../../../model/item_type_field_model.dart';
 import '../../../model/item_type_model.dart';
 import '../../../view_model/cubit/items/items_cubit.dart';
 import '../../../view_model/cubit/items/items_state.dart';
+import '../../../view_model/provider/current_user_provider.dart';
 import '../../../view_model/provider/expiry_provider.dart';
 import '../../../view_model/provider/items_cache_provider.dart';
 import '../../../view_model/utils/currency_formatter.dart';
@@ -119,6 +120,7 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
     final ItemsCubit cubit = context.read<ItemsCubit>();
     final ExpiryProvider expiry = context.read<ExpiryProvider>();
     final Map<int, String> pruned = DynamicFieldUtils.pruneEmpty(_fieldValues);
+    final String? userId = context.read<CurrentUserProvider>().userId;
 
     final ItemModel? created = _isEditing
         ? (await cubit.updateItem(
@@ -136,6 +138,7 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
                   notes: _notes.text,
                   isActive: _isActive,
                   fieldValues: pruned,
+                  updatedBy: userId,
                 )
                 ? widget.item
                 : null)
@@ -153,6 +156,7 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
             notes: _notes.text,
             isActive: _isActive,
             fieldValues: pruned,
+            updatedBy: userId,
           );
 
     if (!mounted) return;

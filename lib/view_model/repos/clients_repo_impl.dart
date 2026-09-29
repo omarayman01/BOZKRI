@@ -30,6 +30,7 @@ class ClientsRepoImpl implements ClientsRepo {
     bool isActive = true,
     String? passportId,
     String? nationalId,
+    String? updatedBy,
   }) =>
       guard(() => _dao.insertClient(
             name: name.trim(),
@@ -38,11 +39,12 @@ class ClientsRepoImpl implements ClientsRepo {
             isActive: isActive,
             passportId: passportId?.trim(),
             nationalId: nationalId?.trim(),
+            updatedBy: updatedBy,
           ));
 
   @override
-  Future<void> updateClient(ClientModel client) =>
-      guard(() => _dao.updateClient(client));
+  Future<void> updateClient(ClientModel client, {String? updatedBy}) =>
+      guard(() => _dao.updateClient(client, updatedBy: updatedBy));
 
   @override
   Future<void> deleteClient(int id) => guard(() async {

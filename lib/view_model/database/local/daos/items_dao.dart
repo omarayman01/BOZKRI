@@ -130,6 +130,7 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
     String? notes,
     bool isActive = true,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) {
     return transaction(() async {
       final int itemId = await into(items).insert(
@@ -145,6 +146,7 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
           notes: Value<String?>(notes),
           isActive: Value<bool>(isActive),
           createdAt: DateTime.now(),
+          updatedBy: Value<String?>(updatedBy),
         ),
       );
       await _writeFieldValues(itemId, fieldValues);
@@ -167,6 +169,7 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
     String? notes,
     required bool isActive,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) {
     return transaction(() async {
       await (update(items)..where(($ItemsTable t) => t.id.equals(id))).write(
@@ -182,6 +185,7 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
           notes: Value<String?>(notes),
           isActive: Value<bool>(isActive),
           updatedAt: Value<DateTime>(DateTime.now()),
+          updatedBy: Value<String?>(updatedBy),
         ),
       );
       await (delete(itemFieldValues)

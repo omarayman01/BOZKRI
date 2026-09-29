@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../model/supplier_model.dart';
 import '../../../view_model/cubit/suppliers/suppliers_cubit.dart';
 import '../../../view_model/cubit/suppliers/suppliers_state.dart';
+import '../../../view_model/provider/current_user_provider.dart';
 import '../../../view_model/provider/suppliers_cache_provider.dart';
 import '../../../view_model/utils/validators.dart';
 import '../../constants/app_colors.dart';
@@ -53,6 +54,7 @@ class _AddEditSupplierScreenState extends State<AddEditSupplierScreen> {
 
     final SuppliersCubit cubit = context.read<SuppliersCubit>();
     final SuppliersCacheProvider cache = context.read<SuppliersCacheProvider>();
+    final String? userId = context.read<CurrentUserProvider>().userId;
 
     final bool ok = _isEditing
         ? await cubit.updateSupplier(
@@ -63,6 +65,7 @@ class _AddEditSupplierScreenState extends State<AddEditSupplierScreen> {
               notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
               isActive: _isActive,
             ),
+            updatedBy: userId,
           )
         : await cubit.addSupplier(
             cache,
@@ -70,6 +73,7 @@ class _AddEditSupplierScreenState extends State<AddEditSupplierScreen> {
             phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
             notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
             isActive: _isActive,
+            updatedBy: userId,
           );
 
     if (!mounted) return;

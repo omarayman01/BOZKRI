@@ -41,6 +41,7 @@ class ClientsCubit extends Cubit<ClientsState> {
     bool isActive = true,
     String? passportId,
     String? nationalId,
+    String? updatedBy,
   }) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
@@ -51,6 +52,7 @@ class ClientsCubit extends Cubit<ClientsState> {
         isActive: isActive,
         passportId: passportId,
         nationalId: nationalId,
+        updatedBy: updatedBy,
       );
       final ClientModel? created = await _repo.getClient(id);
       if (created != null) {
@@ -73,13 +75,14 @@ class ClientsCubit extends Cubit<ClientsState> {
   }
 
   Future<bool> updateClient(
-      ClientsCacheProvider cache, ClientModel client) async {
+      ClientsCacheProvider cache, ClientModel client, {String? updatedBy}) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
-      await _repo.updateClient(client);
-      cache.upsert(client);
+      await _repo.updateClient(client, updatedBy: updatedBy);
+      final ClientModel saved = await _repo.getClient(client.id) ?? client;
+      cache.upsert(saved);
       final List<ClientModel> updated = state.clients
-          .map((ClientModel c) => c.id == client.id ? client : c)
+          .map((ClientModel c) => c.id == saved.id ? saved : c)
           .toList();
       emit(state.copyWith(
         clients: updated,

@@ -27,23 +27,26 @@ class SuppliersRepoImpl implements SuppliersRepo {
     String? phone,
     String? notes,
     bool isActive = true,
+    String? updatedBy,
   }) =>
       guard(() => _dao.insertSupplier(
             name: name.trim(),
             phone: phone?.trim(),
             notes: notes?.trim(),
             isActive: isActive,
+            updatedBy: updatedBy,
           ));
 
   @override
-  Future<void> updateSupplier(SupplierModel supplier) => guard(() async {
+  Future<void> updateSupplier(SupplierModel supplier, {String? updatedBy}) =>
+      guard(() async {
         if (supplier.isSystemSupplier) {
           throw const ConstraintFailure(
             'This is the system\'s "no supplier" placeholder and cannot be '
             'edited.',
           );
         }
-        await _dao.updateSupplier(supplier);
+        await _dao.updateSupplier(supplier, updatedBy: updatedBy);
       });
 
   @override

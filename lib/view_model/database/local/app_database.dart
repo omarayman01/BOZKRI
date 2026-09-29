@@ -72,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -135,6 +135,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 11) {
             await m.addColumn(suppliers, suppliers.isSystemSupplier);
             await _seedSystemSupplier();
+          }
+          if (from < 12) {
+            await m.addColumn(suppliers, suppliers.updatedBy);
+            await m.addColumn(clients, clients.updatedBy);
+            await m.addColumn(items, items.updatedBy);
+            await m.addColumn(transactions, transactions.updatedBy);
           }
         },
         beforeOpen: (OpeningDetails details) async {

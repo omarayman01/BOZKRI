@@ -28,6 +28,7 @@ abstract class TransactionsRepo {
     String? commissionName,
     double? commissionAmount,
     PaymentStatus? paymentStatusOverride,
+    String? updatedBy,
   });
 
   /// Atomic: overwrites snapshots and totals, re-checks new single-use lines.
@@ -42,6 +43,7 @@ abstract class TransactionsRepo {
     String? commissionName,
     double? commissionAmount,
     PaymentStatus? paymentStatusOverride,
+    String? updatedBy,
   });
 
   /// Atomic: cascades children and releases single-use items.

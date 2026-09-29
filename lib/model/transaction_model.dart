@@ -50,6 +50,8 @@ class TransactionModel with _$TransactionModel {
     double? commissionAmount,
     /// null = use the derived status; else paid/unpaid, for DISPLAY only.
     PaymentStatus? paymentStatusOverride,
+    DateTime? updatedAt,
+    String? updatedBy,
   }) = _TransactionModel;
 
   double get grossProfit => total - totalCost;

@@ -73,6 +73,7 @@ class ItemsCubit extends Cubit<ItemsState> {
     String? notes,
     bool isActive = true,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
@@ -88,6 +89,7 @@ class ItemsCubit extends Cubit<ItemsState> {
         notes: notes,
         isActive: isActive,
         fieldValues: fieldValues,
+        updatedBy: updatedBy,
       );
       final ItemModel? created = await _repo.getItem(id);
       if (created != null) {
@@ -123,6 +125,7 @@ class ItemsCubit extends Cubit<ItemsState> {
     String? notes,
     required bool isActive,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
@@ -139,6 +142,7 @@ class ItemsCubit extends Cubit<ItemsState> {
         notes: notes,
         isActive: isActive,
         fieldValues: fieldValues,
+        updatedBy: updatedBy,
       );
       final ItemModel? updated = await _repo.getItem(id);
       if (updated != null) {

@@ -43,6 +43,7 @@ class ClientsDao extends DatabaseAccessor<AppDatabase> with _$ClientsDaoMixin {
     bool isActive = true,
     String? passportId,
     String? nationalId,
+    String? updatedBy,
   }) {
     return into(clients).insert(
       ClientsCompanion.insert(
@@ -53,11 +54,12 @@ class ClientsDao extends DatabaseAccessor<AppDatabase> with _$ClientsDaoMixin {
         createdAt: DateTime.now(),
         passportId: Value<String?>(passportId),
         nationalId: Value<String?>(nationalId),
+        updatedBy: Value<String?>(updatedBy),
       ),
     );
   }
 
-  Future<bool> updateClient(ClientModel client) {
+  Future<bool> updateClient(ClientModel client, {String? updatedBy}) {
     return update(clients).replace(
       ClientRow(
         id: client.id,
@@ -69,6 +71,7 @@ class ClientsDao extends DatabaseAccessor<AppDatabase> with _$ClientsDaoMixin {
         passportId: client.passportId,
         nationalId: client.nationalId,
         updatedAt: DateTime.now(),
+        updatedBy: updatedBy ?? client.updatedBy,
       ),
     );
   }

@@ -17,6 +17,7 @@ import '../../../view_model/provider/expiry_provider.dart';
 import '../../../view_model/provider/items_cache_provider.dart';
 import '../../../view_model/provider/settings_provider.dart';
 import '../../../view_model/provider/suppliers_cache_provider.dart';
+import '../../../view_model/provider/user_directory_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../features/accounts_features/accounts_screen.dart';
 import '../../features/cars_features/cars_screen.dart';
@@ -99,6 +100,8 @@ class _MainShellState extends State<MainShell> {
     await context.read<DealsCubit>().loadDeals();
     if (!mounted) return;
     await context.read<DashboardCubit>().load();
+    if (!mounted) return;
+    await context.read<UserDirectoryProvider>().load();
   }
 
   /// Fires on every [SyncCubit] emission; reloads the cubits once per newly

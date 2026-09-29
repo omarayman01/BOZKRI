@@ -175,6 +175,7 @@ class SyncEngine {
           isActive: Value<bool>(r['is_active'] as bool? ?? true),
           isSystemSupplier: Value<bool>(r['is_system_supplier'] as bool? ?? false),
           updatedAt: Value<DateTime>(remoteUpdatedAt),
+          updatedBy: Value<String?>(r['updated_by'] as String?),
         ));
       } else {
         // A remote system-supplier row is only inserted locally if this
@@ -203,6 +204,7 @@ class SyncEngine {
                     Value<bool>(r['is_system_supplier'] as bool? ?? false),
                 createdAt: DateTime.parse(r['created_at'] as String),
                 updatedAt: Value<DateTime>(remoteUpdatedAt),
+                updatedBy: Value<String?>(r['updated_by'] as String?),
               ),
             );
         await _db.syncLinksDao.link('suppliers', newId, remoteId);
@@ -268,6 +270,7 @@ class SyncEngine {
           passportId: Value<String?>(r['passport_id'] as String?),
           nationalId: Value<String?>(r['national_id'] as String?),
           updatedAt: Value<DateTime>(remoteUpdatedAt),
+          updatedBy: Value<String?>(r['updated_by'] as String?),
         ));
       } else {
         final int newId = await _db.into(_db.clients).insert(
@@ -280,6 +283,7 @@ class SyncEngine {
                 passportId: Value<String?>(r['passport_id'] as String?),
                 nationalId: Value<String?>(r['national_id'] as String?),
                 updatedAt: Value<DateTime>(remoteUpdatedAt),
+                updatedBy: Value<String?>(r['updated_by'] as String?),
               ),
             );
         await _db.syncLinksDao.link('clients', newId, remoteId);
@@ -513,6 +517,7 @@ class SyncEngine {
           notes: Value<String?>(r['notes'] as String?),
           isActive: Value<bool>(r['is_active'] as bool? ?? true),
           updatedAt: Value<DateTime>(remoteUpdatedAt),
+          updatedBy: Value<String?>(r['updated_by'] as String?),
         ));
       } else {
         final int newId = await _db.into(_db.items).insert(
@@ -529,6 +534,7 @@ class SyncEngine {
                 isActive: Value<bool>(r['is_active'] as bool? ?? true),
                 createdAt: DateTime.parse(r['created_at'] as String),
                 updatedAt: Value<DateTime>(remoteUpdatedAt),
+                updatedBy: Value<String?>(r['updated_by'] as String?),
               ),
             );
         await _db.syncLinksDao.link('items', newId, remoteId);
@@ -684,6 +690,7 @@ class SyncEngine {
           paymentStatusOverride:
               Value<String?>(r['payment_status_override'] as String?),
           updatedAt: Value<DateTime>(remoteUpdatedAt),
+          updatedBy: Value<String?>(r['updated_by'] as String?),
         ));
       } else {
         final int newId = await _db.into(_db.transactions).insert(
@@ -703,6 +710,7 @@ class SyncEngine {
                 paymentStatusOverride:
                     Value<String?>(r['payment_status_override'] as String?),
                 updatedAt: Value<DateTime>(remoteUpdatedAt),
+                updatedBy: Value<String?>(r['updated_by'] as String?),
               ),
             );
         await _db.syncLinksDao.link('transactions', newId, remoteId);

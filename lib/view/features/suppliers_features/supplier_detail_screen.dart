@@ -16,6 +16,7 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/error_state_widget.dart';
 import '../../core/widgets/loading_widget.dart';
 import '../../core/widgets/primary_button.dart';
+import '../../core/widgets/sync_meta_footer.dart';
 import 'add_edit_item_screen.dart';
 import 'widgets/supplier_balance_card.dart';
 import 'widgets/supplier_items_tab.dart';
@@ -142,6 +143,11 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
                   ),
                 if (state.balance != null)
                   SupplierBalanceCard(balance: state.balance!),
+                SyncMetaFooter(
+                  createdAt: state.supplier!.createdAt,
+                  updatedAt: state.supplier!.updatedAt,
+                  updatedBy: state.supplier!.updatedBy,
+                ),
               ],
             ),
           ),

@@ -13,5 +13,7 @@ class ClientModel with _$ClientModel {
     required DateTime createdAt,
     String? passportId,
     String? nationalId,
+    DateTime? updatedAt,
+    String? updatedBy,
   }) = _ClientModel;
 }

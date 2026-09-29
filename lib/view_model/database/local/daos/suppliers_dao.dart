@@ -55,6 +55,7 @@ class SuppliersDao extends DatabaseAccessor<AppDatabase>
     String? phone,
     String? notes,
     bool isActive = true,
+    String? updatedBy,
   }) {
     return into(suppliers).insert(
       SuppliersCompanion.insert(
@@ -63,11 +64,12 @@ class SuppliersDao extends DatabaseAccessor<AppDatabase>
         notes: Value<String?>(notes),
         isActive: Value<bool>(isActive),
         createdAt: DateTime.now(),
+        updatedBy: Value<String?>(updatedBy),
       ),
     );
   }
 
-  Future<bool> updateSupplier(SupplierModel supplier) {
+  Future<bool> updateSupplier(SupplierModel supplier, {String? updatedBy}) {
     return update(suppliers).replace(
       SupplierRow(
         id: supplier.id,
@@ -77,6 +79,7 @@ class SuppliersDao extends DatabaseAccessor<AppDatabase>
         isActive: supplier.isActive,
         createdAt: supplier.createdAt,
         updatedAt: DateTime.now(),
+        updatedBy: updatedBy ?? supplier.updatedBy,
         isSystemSupplier: supplier.isSystemSupplier,
       ),
     );

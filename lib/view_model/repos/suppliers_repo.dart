@@ -12,8 +12,9 @@ abstract class SuppliersRepo {
     String? phone,
     String? notes,
     bool isActive,
+    String? updatedBy,
   });
-  Future<void> updateSupplier(SupplierModel supplier);
+  Future<void> updateSupplier(SupplierModel supplier, {String? updatedBy});
   Future<void> deleteSupplier(int id);
 
   /// The seeded "بوزكري (بدون مورد)" supplier used when a car has no real

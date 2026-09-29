@@ -37,6 +37,7 @@ class SuppliersCubit extends Cubit<SuppliersState> {
     String? phone,
     String? notes,
     bool isActive = true,
+    String? updatedBy,
   }) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
@@ -45,6 +46,7 @@ class SuppliersCubit extends Cubit<SuppliersState> {
         phone: phone,
         notes: notes,
         isActive: isActive,
+        updatedBy: updatedBy,
       );
       final SupplierModel? created = await _repo.getSupplier(id);
       if (created != null) {
@@ -69,14 +71,17 @@ class SuppliersCubit extends Cubit<SuppliersState> {
   }
 
   Future<bool> updateSupplier(
-      SuppliersCacheProvider cache, SupplierModel supplier) async {
+      SuppliersCacheProvider cache, SupplierModel supplier,
+      {String? updatedBy}) async {
     emit(state.copyWith(isSaving: true, clearError: true));
     try {
-      await _repo.updateSupplier(supplier);
-      cache.upsert(supplier);
+      await _repo.updateSupplier(supplier, updatedBy: updatedBy);
+      final SupplierModel saved =
+          await _repo.getSupplier(supplier.id) ?? supplier;
+      cache.upsert(saved);
       emit(state.copyWith(
         suppliers: state.suppliers
-            .map((SupplierModel s) => s.id == supplier.id ? supplier : s)
+            .map((SupplierModel s) => s.id == saved.id ? saved : s)
             .toList(),
         status: SuppliersStatus.success,
         isSaving: false,

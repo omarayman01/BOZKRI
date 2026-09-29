@@ -43,6 +43,7 @@ class ItemsRepoImpl implements ItemsRepo {
     String? notes,
     bool isActive = true,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) =>
       guard(() => _dao.createItem(
             itemTypeId: itemTypeId,
@@ -56,6 +57,7 @@ class ItemsRepoImpl implements ItemsRepo {
             notes: notes?.trim(),
             isActive: isActive,
             fieldValues: fieldValues,
+            updatedBy: updatedBy,
           ));
 
   @override
@@ -72,6 +74,7 @@ class ItemsRepoImpl implements ItemsRepo {
     String? notes,
     required bool isActive,
     Map<int, String> fieldValues = const <int, String>{},
+    String? updatedBy,
   }) =>
       guard(() => _dao.updateItem(
             id: id,
@@ -86,6 +89,7 @@ class ItemsRepoImpl implements ItemsRepo {
             notes: notes?.trim(),
             isActive: isActive,
             fieldValues: fieldValues,
+            updatedBy: updatedBy,
           ));
 
   @override

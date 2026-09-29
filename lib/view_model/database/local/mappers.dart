@@ -24,6 +24,8 @@ extension ClientRowMapper on ClientRow {
         createdAt: createdAt,
         passportId: passportId,
         nationalId: nationalId,
+        updatedAt: updatedAt,
+        updatedBy: updatedBy,
       );
 }
 
@@ -35,6 +37,8 @@ extension SupplierRowMapper on SupplierRow {
         notes: notes,
         isActive: isActive,
         createdAt: createdAt,
+        updatedAt: updatedAt,
+        updatedBy: updatedBy,
         isSystemSupplier: isSystemSupplier,
       );
 }
@@ -83,6 +87,8 @@ extension ItemRowMapper on ItemRow {
         notes: notes,
         isActive: isActive,
         createdAt: createdAt,
+        updatedAt: updatedAt,
+        updatedBy: updatedBy,
         fieldValues: fieldValues,
         itemTypeName: itemTypeName,
         supplierName: supplierName,
@@ -108,6 +114,8 @@ extension TransactionRowMapper on TransactionRow {
         paymentStatusOverride: paymentStatusOverride == null
             ? null
             : PaymentStatus.fromName(paymentStatusOverride!),
+        updatedAt: updatedAt,
+        updatedBy: updatedBy,
       );
 }
 

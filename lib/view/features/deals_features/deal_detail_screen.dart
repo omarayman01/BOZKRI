@@ -26,6 +26,7 @@ import '../../core/widgets/kpi_card.dart';
 import '../../core/widgets/loading_widget.dart';
 import '../../core/widgets/payment_status_chip.dart';
 import '../../core/widgets/primary_button.dart';
+import '../../core/widgets/sync_meta_footer.dart';
 import 'widgets/add_payment_dialog.dart';
 import 'widgets/line_item_tile.dart';
 import 'widgets/per_day_rental_grid.dart';
@@ -400,6 +401,11 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
           const SizedBox(height: 14),
           Text(deal.transaction.notes!, style: AppTextStyles.bodyMuted),
         ],
+        SyncMetaFooter(
+          createdAt: deal.transaction.dateTime,
+          updatedAt: deal.transaction.updatedAt,
+          updatedBy: deal.transaction.updatedBy,
+        ),
       ],
     );
   }

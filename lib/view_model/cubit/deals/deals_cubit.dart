@@ -57,6 +57,7 @@ class DealsCubit extends Cubit<DealsState> {
   Future<int?> commit(
     TransactionDraftProvider draft, {
     ItemsCacheProvider? itemsCache,
+    String? updatedBy,
   }) async {
     if (!draft.canCommit) {
       emit(state.copyWith(
@@ -78,6 +79,7 @@ class DealsCubit extends Cubit<DealsState> {
         commissionName: draft.commissionName,
         commissionAmount: draft.commissionAmount,
         paymentStatusOverride: draft.paymentStatusOverride,
+        updatedBy: updatedBy,
       );
 
       _reflectSingleUse(itemsCache, lines, consumed: true);
@@ -104,6 +106,7 @@ class DealsCubit extends Cubit<DealsState> {
   Future<bool> editDeal(
     TransactionDraftProvider draft, {
     ItemsCacheProvider? itemsCache,
+    String? updatedBy,
   }) async {
     final int? id = draft.editingTransactionId;
     if (id == null || !draft.canCommit) {
@@ -125,6 +128,7 @@ class DealsCubit extends Cubit<DealsState> {
         commissionName: draft.commissionName,
         commissionAmount: draft.commissionAmount,
         paymentStatusOverride: draft.paymentStatusOverride,
+        updatedBy: updatedBy,
       );
 
       _reflectSingleUse(itemsCache, lines, consumed: true);

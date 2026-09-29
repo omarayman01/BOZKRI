@@ -7,6 +7,7 @@ import '../../../model/client_model.dart';
 import '../../../view_model/cubit/clients/clients_cubit.dart';
 import '../../../view_model/cubit/clients/clients_state.dart';
 import '../../../view_model/provider/clients_cache_provider.dart';
+import '../../../view_model/provider/current_user_provider.dart';
 import '../../../view_model/utils/validators.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_constants.dart';
@@ -60,6 +61,7 @@ class _AddEditClientScreenState extends State<AddEditClientScreen> {
 
     final ClientsCubit cubit = context.read<ClientsCubit>();
     final ClientsCacheProvider cache = context.read<ClientsCacheProvider>();
+    final String? userId = context.read<CurrentUserProvider>().userId;
 
     final String? passportId =
         _passportId.text.trim().isEmpty ? null : _passportId.text.trim();
@@ -79,6 +81,7 @@ class _AddEditClientScreenState extends State<AddEditClientScreen> {
                     passportId: passportId,
                     nationalId: nationalId,
                   ),
+                  updatedBy: userId,
                 )
                 ? widget.client
                 : null)
@@ -90,6 +93,7 @@ class _AddEditClientScreenState extends State<AddEditClientScreen> {
             isActive: _isActive,
             passportId: passportId,
             nationalId: nationalId,
+            updatedBy: userId,
           );
 
     if (!mounted) return;

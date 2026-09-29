@@ -11,6 +11,7 @@ import '../../../view_model/cubit/deals/deals_cubit.dart';
 import '../../../view_model/cubit/deals/deals_state.dart';
 import '../../../view_model/database/local/daos/transactions_dao.dart';
 import '../../../view_model/provider/clients_cache_provider.dart';
+import '../../../view_model/provider/current_user_provider.dart';
 import '../../../view_model/provider/items_cache_provider.dart';
 import '../../../view_model/provider/transaction_draft_provider.dart';
 import '../../../view_model/utils/currency_formatter.dart';
@@ -100,6 +101,7 @@ class _AddEditDealScreenState extends State<AddEditDealScreen> {
         context.read<TransactionDraftProvider>();
     final DealsCubit cubit = context.read<DealsCubit>();
     final ItemsCacheProvider itemsCache = context.read<ItemsCacheProvider>();
+    final String? userId = context.read<CurrentUserProvider>().userId;
 
     if (_isEditing) {
       final bool confirmed = await ConfirmDialog.show(
@@ -111,7 +113,8 @@ class _AddEditDealScreenState extends State<AddEditDealScreen> {
       );
       if (!confirmed || !mounted) return;
 
-      final bool ok = await cubit.editDeal(draft, itemsCache: itemsCache);
+      final bool ok = await cubit.editDeal(draft,
+          itemsCache: itemsCache, updatedBy: userId);
       if (!mounted) return;
       if (ok) {
         Navigator.of(context).pop(true);
@@ -121,7 +124,8 @@ class _AddEditDealScreenState extends State<AddEditDealScreen> {
       return;
     }
 
-    final int? id = await cubit.commit(draft, itemsCache: itemsCache);
+    final int? id =
+        await cubit.commit(draft, itemsCache: itemsCache, updatedBy: userId);
     if (!mounted) return;
     if (id != null) {
       Navigator.of(context).pop(true);

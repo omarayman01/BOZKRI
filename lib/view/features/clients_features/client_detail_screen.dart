@@ -10,6 +10,7 @@ import '../../constants/app_constants.dart';
 import '../../constants/app_text_styles.dart';
 import '../../core/widgets/error_state_widget.dart';
 import '../../core/widgets/loading_widget.dart';
+import '../../core/widgets/sync_meta_footer.dart';
 import 'widgets/client_balance_card.dart';
 import 'widgets/client_items_tab.dart';
 import 'widgets/client_payments_tab.dart';
@@ -118,6 +119,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   ),
                 if (state.balance != null)
                   ClientBalanceCard(balance: state.balance!),
+                SyncMetaFooter(
+                  createdAt: state.client!.createdAt,
+                  updatedAt: state.client!.updatedAt,
+                  updatedBy: state.client!.updatedBy,
+                ),
               ],
             ),
           ),

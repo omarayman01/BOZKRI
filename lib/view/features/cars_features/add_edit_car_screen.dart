@@ -9,6 +9,7 @@ import '../../../model/item_type_model.dart';
 import '../../../model/supplier_model.dart';
 import '../../../view_model/cubit/items/items_cubit.dart';
 import '../../../view_model/cubit/items/items_state.dart';
+import '../../../view_model/provider/current_user_provider.dart';
 import '../../../view_model/provider/expiry_provider.dart';
 import '../../../view_model/provider/items_cache_provider.dart';
 import '../../../view_model/provider/suppliers_cache_provider.dart';
@@ -21,6 +22,7 @@ import '../../constants/app_text_styles.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/party_picker.dart';
 import '../../core/widgets/primary_button.dart';
+import '../../core/widgets/sync_meta_footer.dart';
 import '../suppliers_features/widgets/dynamic_fields_form.dart';
 
 /// Add or edit a car directly, without going through a deal — the Car item
@@ -113,6 +115,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
     final int? systemSupplierId =
         context.read<SuppliersCacheProvider>().systemSupplierId;
     final int effectiveSupplierId = _supplierId ?? systemSupplierId!;
+    final String? userId = context.read<CurrentUserProvider>().userId;
 
     final ItemModel? created = _isEditing
         ? (await cubit.updateItem(
@@ -129,6 +132,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
                   notes: _notes.text,
                   isActive: _isActive,
                   fieldValues: pruned,
+                  updatedBy: userId,
                 )
                 ? widget.car
                 : null)
@@ -145,6 +149,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
             notes: _notes.text,
             isActive: _isActive,
             fieldValues: pruned,
+            updatedBy: userId,
           );
 
     if (!mounted) return;
@@ -331,6 +336,12 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
                           );
                         },
                       ),
+                      if (widget.car != null)
+                        SyncMetaFooter(
+                          createdAt: widget.car!.createdAt,
+                          updatedAt: widget.car!.updatedAt,
+                          updatedBy: widget.car!.updatedBy,
+                        ),
                     ],
                   ),
                 ),

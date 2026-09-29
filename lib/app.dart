@@ -36,6 +36,7 @@ import 'view_model/provider/items_cache_provider.dart';
 import 'view_model/provider/settings_provider.dart';
 import 'view_model/provider/suppliers_cache_provider.dart';
 import 'view_model/provider/transaction_draft_provider.dart';
+import 'view_model/provider/user_directory_provider.dart';
 import 'view_model/repos/accounts_repo.dart';
 import 'view_model/repos/accounts_repo_impl.dart';
 import 'view_model/repos/auth_repo.dart';
@@ -107,6 +108,7 @@ Future<Widget> startApp() async {
   final ExpiryProvider expiryProvider =
       ExpiryProvider(warningDays: settingsProvider.expiryWarningDays);
   final TransactionDraftProvider draftProvider = TransactionDraftProvider();
+  final UserDirectoryProvider userDirectory = UserDirectoryProvider(accountsRepo);
 
   // ---- Cubits (async / DB I/O) ----
   final AuthCubit authCubit = AuthCubit(authRepo, currentUserProvider);
@@ -155,6 +157,8 @@ Future<Widget> startApp() async {
       ChangeNotifierProvider<ExpiryProvider>.value(value: expiryProvider),
       ChangeNotifierProvider<TransactionDraftProvider>.value(
           value: draftProvider),
+      ChangeNotifierProvider<UserDirectoryProvider>.value(
+          value: userDirectory),
       BlocProvider<AuthCubit>.value(value: authCubit),
       BlocProvider<AccountsCubit>.value(value: accountsCubit),
       BlocProvider<SyncCubit>.value(value: syncCubit),

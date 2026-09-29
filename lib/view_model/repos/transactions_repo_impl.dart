@@ -33,6 +33,7 @@ class TransactionsRepoImpl implements TransactionsRepo {
     String? commissionName,
     double? commissionAmount,
     PaymentStatus? paymentStatusOverride,
+    String? updatedBy,
   }) =>
       guard(() {
         _validate(lines, discount);
@@ -47,6 +48,7 @@ class TransactionsRepoImpl implements TransactionsRepo {
           commissionName: commissionName,
           commissionAmount: commissionAmount,
           paymentStatusOverride: paymentStatusOverride?.name,
+          updatedBy: updatedBy,
         );
       });
 
@@ -62,6 +64,7 @@ class TransactionsRepoImpl implements TransactionsRepo {
     String? commissionName,
     double? commissionAmount,
     PaymentStatus? paymentStatusOverride,
+    String? updatedBy,
   }) =>
       guard(() {
         _validate(lines, discount);
@@ -77,6 +80,7 @@ class TransactionsRepoImpl implements TransactionsRepo {
           commissionName: commissionName,
           commissionAmount: commissionAmount,
           paymentStatusOverride: paymentStatusOverride?.name,
+          updatedBy: updatedBy,
         );
       });
 
