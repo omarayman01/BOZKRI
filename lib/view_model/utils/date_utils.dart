@@ -10,16 +10,21 @@ class AppDateUtils {
   static final DateFormat _date =
       DateFormat('dd MMM yyyy', AppConstants.numberLocaleEn);
   static final DateFormat _dateTime =
-      DateFormat('dd MMM yyyy  HH:mm', AppConstants.numberLocaleEn);
+      DateFormat('dd MMM yyyy  hh:mm a', AppConstants.numberLocaleEn);
   static final DateFormat _short =
       DateFormat('dd/MM', AppConstants.numberLocaleEn);
   static final DateFormat _month =
       DateFormat('MMM yyyy', AppConstants.numberLocaleEn);
 
-  static String formatDate(DateTime value) => _date.format(value);
-  static String formatDateTime(DateTime value) => _dateTime.format(value);
-  static String formatShort(DateTime value) => _short.format(value);
-  static String formatMonth(DateTime value) => _month.format(value);
+  /// [value] may be a UTC instant (e.g. pulled from Supabase, or parsed from
+  /// an ISO string with a `Z` suffix) — always convert to the device's local
+  /// time zone before formatting, or a synced record would display its
+  /// last-updated time hours off from what actually happened here.
+  static String formatDate(DateTime value) => _date.format(value.toLocal());
+  static String formatDateTime(DateTime value) =>
+      _dateTime.format(value.toLocal());
+  static String formatShort(DateTime value) => _short.format(value.toLocal());
+  static String formatMonth(DateTime value) => _month.format(value.toLocal());
 
   static String formatNullable(DateTime? value, {String fallback = '—'}) =>
       value == null ? fallback : formatDate(value);
