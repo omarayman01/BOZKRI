@@ -61,18 +61,26 @@ class SyncEngine {
       // corrupts local data — it only leaves that row queued for next time —
       // so this phase does not need the same all-or-nothing guarantee pull
       // does; each row push is independently idempotent (upsert by remoteId).
-      pushed += await _pushSuppliers();
-      pushed += await _pushClients();
-      pushed += await _pushItemTypes();
-      pushed += await _pushItemTypeFields();
-      pushed += await _pushItems();
-      pushed += await _pushExpenseCategories();
-      pushed += await _pushTransactions();
-      pushed += await _pushTransactionItems();
-      pushed += await _pushPayments();
-      pushed += await _pushRefunds();
-      pushed += await _pushRefundItems();
-      pushed += await _pushExpenses();
+      //
+      // Each table's push is wrapped separately: a failure on one table (e.g.
+      // a duplicate-name conflict) must not stop every other table from
+      // pushing and, critically, must not skip the pull phase below — that
+      // used to leave every screen showing nothing after a sync error,
+      // because one bad row aborted the entire sync.
+      pushed += await _pushTable('suppliers', _pushSuppliers, errors);
+      pushed += await _pushTable('clients', _pushClients, errors);
+      pushed += await _pushTable('item_types', _pushItemTypes, errors);
+      pushed += await _pushTable('item_type_fields', _pushItemTypeFields, errors);
+      pushed += await _pushTable('items', _pushItems, errors);
+      pushed +=
+          await _pushTable('expense_categories', _pushExpenseCategories, errors);
+      pushed += await _pushTable('transactions', _pushTransactions, errors);
+      pushed += await _pushTable(
+          'transaction_items', _pushTransactionItems, errors);
+      pushed += await _pushTable('payments', _pushPayments, errors);
+      pushed += await _pushTable('refunds', _pushRefunds, errors);
+      pushed += await _pushTable('refund_items', _pushRefundItems, errors);
+      pushed += await _pushTable('expenses', _pushExpenses, errors);
 
       // ---- Pull: fetch every table's remote rows FIRST (network only, no
       // local writes yet), then apply every local write inside ONE Drift
@@ -116,6 +124,21 @@ class SyncEngine {
       errors.add(e.toString());
     }
     return SyncResult(pushed: pushed, pulled: pulled, errors: errors);
+  }
+
+  /// Runs one table's push function, catching any failure so it can't stop
+  /// the other tables from pushing or block the pull phase from running.
+  Future<int> _pushTable(
+    String table,
+    Future<int> Function() push,
+    List<String> errors,
+  ) async {
+    try {
+      return await push();
+    } catch (e) {
+      errors.add('$table: $e');
+      return 0;
+    }
   }
 
   String? get _userId => _currentUser.userId;
@@ -312,16 +335,40 @@ class SyncEngine {
       if (remoteId != null) {
         await _client.from('item_types').update(payload).eq('id', remoteId);
       } else {
-        final Map<String, dynamic> inserted = await _client
-            .from('item_types')
-            .insert(payload)
-            .select('id')
-            .single();
-        await _db.syncLinksDao.link('item_types', row.id, inserted['id'] as String);
+        final String linkedRemoteId = await _insertOrLinkByName(
+          table: 'item_types',
+          payload: payload,
+          name: row.name,
+        );
+        await _db.syncLinksDao.link('item_types', row.id, linkedRemoteId);
       }
       count++;
     }
     return count;
+  }
+
+  /// Inserts a row into a table whose `name` column is unique remotely, and
+  /// falls back to linking against an already-existing row with the same
+  /// name on a 23505 conflict — e.g. two devices that both seeded the same
+  /// default item type or expense category locally before either had ever
+  /// synced. Without this, the second device's push throws a
+  /// PostgrestException that (before this fix) aborted the entire sync,
+  /// including the pull phase, leaving every screen looking empty.
+  Future<String> _insertOrLinkByName({
+    required String table,
+    required Map<String, dynamic> payload,
+    required String name,
+  }) async {
+    try {
+      final Map<String, dynamic> inserted =
+          await _client.from(table).insert(payload).select('id').single();
+      return inserted['id'] as String;
+    } on PostgrestException catch (e) {
+      if (e.code != '23505') rethrow;
+      final Map<String, dynamic> existing =
+          await _client.from(table).select('id').eq('name', name).single();
+      return existing['id'] as String;
+    }
   }
 
   Future<int> _pullItemTypes(List<Map<String, dynamic>> remoteRows) async {
@@ -563,13 +610,13 @@ class SyncEngine {
       if (remoteId != null) {
         await _client.from('expense_categories').update(payload).eq('id', remoteId);
       } else {
-        final Map<String, dynamic> inserted = await _client
-            .from('expense_categories')
-            .insert(payload)
-            .select('id')
-            .single();
+        final String linkedRemoteId = await _insertOrLinkByName(
+          table: 'expense_categories',
+          payload: payload,
+          name: row.name,
+        );
         await _db.syncLinksDao
-            .link('expense_categories', row.id, inserted['id'] as String);
+            .link('expense_categories', row.id, linkedRemoteId);
       }
       count++;
     }

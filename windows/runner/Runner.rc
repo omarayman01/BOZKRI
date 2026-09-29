@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "agency_management_system" "\0"
+            VALUE "CompanyName", "BOZKRI" "\0"
+            VALUE "FileDescription", "BOZKRI" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agency_management_system" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agency_management_system.exe" "\0"
-            VALUE "ProductName", "agency_management_system" "\0"
+            VALUE "InternalName", "BOZKRI" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 BOZKRI. All rights reserved." "\0"
+            VALUE "OriginalFilename", "BOZKRI.exe" "\0"
+            VALUE "ProductName", "BOZKRI" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
