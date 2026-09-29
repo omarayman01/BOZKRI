@@ -4,7 +4,7 @@ enum SettingsStatus { initial, working, success, failure }
 
 /// Which file operation produced the current state, so the UI can show the
 /// right confirmation message.
-enum SettingsAction { none, backup, restore, reset }
+enum SettingsAction { none, backup, restore, reset, excelExport }
 
 /// Which step of a multi-step action is currently running, so the blocking
 /// overlay can show a specific status line instead of a generic spinner.

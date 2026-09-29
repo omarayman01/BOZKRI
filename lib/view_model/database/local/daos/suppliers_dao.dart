@@ -76,8 +76,20 @@ class SuppliersDao extends DatabaseAccessor<AppDatabase>
         notes: supplier.notes,
         isActive: supplier.isActive,
         createdAt: supplier.createdAt,
+        updatedAt: DateTime.now(),
+        isSystemSupplier: supplier.isSystemSupplier,
       ),
     );
+  }
+
+  /// The single seeded "بوزكري (بدون مورد)" supplier a car is assigned to
+  /// when it has no real supplier. Always present (seeded at db creation
+  /// and by the schema-11 migration).
+  Future<int> getSystemSupplierId() async {
+    final SupplierRow row = await (select(suppliers)
+          ..where(($SuppliersTable t) => t.isSystemSupplier.equals(true)))
+        .getSingle();
+    return row.id;
   }
 
   Future<int> deleteSupplier(int id) =>

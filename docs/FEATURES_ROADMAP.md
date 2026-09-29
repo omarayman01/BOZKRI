@@ -32,6 +32,26 @@ the real update scenario: back up (`.sqlite` + `.xlsx`), install an app update o
 Windows machine, restore — including hardening the file operations against Windows-specific
 file-locking and expanding the `.xlsx` restore to cover item types too.
 
+**Phases 21–22 are newly added and pending — they reverse this document's own prior scope.**
+The admin has decided the system should stop being single-device/offline-only: Phase 21 makes a
+free Supabase (hosted Postgres + Auth) project the shared online database (with a local SQLite
+cache and an offline warning badge so the app still works with no internet), and Phase 22 adds
+real login/register accounts via Supabase Auth so every action can be attributed to a user.
+(An earlier draft of both phases used Google Sheets; that was replaced with Supabase after review
+— Sheets has no real transactions, no concurrency control, and API quotas that don't fit this
+app's money-safety invariants, whereas Supabase is a real Postgres database with built-in Auth,
+still free with no credit card at this app's expected scale.) Both phases still carry a couple of
+open decisions for the admin before implementation starts — see each phase file.
+
+Three small pending bugs were also fixed in this pass (not their own phase, since they're
+one-line-scope corrections to already-shipped Phase 3/4/15 behavior): the car rental day count
+was counting both the start and end date as full days (16→17 showed as 2 days instead of 1); a
+car line's allowed-kilometers-per-day now defaults to 120 (still freely editable) instead of 0;
+and the "why doesn't a newly added item-type field show up without restarting" report was
+investigated — the current code already re-reads the field schema live on every form rebuild, so
+if this still reproduces on the latest build it needs a fresh repro (exact steps + whether
+`build_runner` was re-run) rather than a code fix, since no stale-cache path was found.
+
 Every phase — done or pending — now has its own file under `docs/features/`; this page is just
 the shared context and an index. Open a phase's file for its full
 goal/schema/state/DAO/UI/localization/acceptance detail.
@@ -102,6 +122,10 @@ goal/schema/state/DAO/UI/localization/acceptance detail.
     (independent)
 20. [Phase 20 — Backup/Restore: Windows Hardening + Item Types in the Excel Restore](features/phase-20-backup-restore-windows-and-full-data.md) — ✅ **Done**
     (depends on Phase 11's backup/restore mechanism and Phase 15's items/item-types schema)
+21. [Phase 21 — Supabase as Shared Online Database + Offline Badge](features/phase-21-supabase-cloud-sync.md) — ⏳ **Pending, open questions**
+    (reverses the "offline-only" scope below; independent of Phases 1–20's Arabic/UX work)
+22. [Phase 22 — Accounts Tab: Login, Register, User Action Log](features/phase-22-accounts-auth.md) — ⏳ **Pending, open questions**
+    (depends on Phase 21's shared backend; reverses the "no accounts" scope below)
 
 ## Global Acceptance
 
@@ -179,9 +203,12 @@ goal/schema/state/DAO/UI/localization/acceptance detail.
 
 - English UI or any language toggle — removed outright, not merely hidden.
 - خزينة (cashbox) and عهدة (custody/float) sheets from the old Excel workbook.
-- Google Sheets or any other online/cloud sync.
-- Multi-device live sharing or merge-based import — the system remains single-device, offline,
-  full-replace-only for a `.sqlite` restore.
 - Cash-basis net profit as an alternative or additional reporting mode — net profit stays
   COGS-based (revenue − cost − expenses) everywhere; supplier-payment cash-out visibility
   (Phase 14) is a display-only addition, never a change to how profit is computed.
+
+**No longer out of scope, as of Phase 21/22:** Supabase/online sync and multi-device live
+sharing (Phase 21), and user accounts (Phase 22) — both bullets that previously excluded these
+have been removed; see those phases for the current design and open questions. The `.sqlite`
+full-replace restore flow (Phases 11/20) is unaffected and remains the local-backup mechanism
+regardless of Phase 21's online sync.

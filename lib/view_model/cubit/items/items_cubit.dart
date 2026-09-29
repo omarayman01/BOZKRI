@@ -56,7 +56,10 @@ class ItemsCubit extends Cubit<ItemsState> {
     }
   }
 
-  Future<bool> addItem(
+  /// Returns the created item on success (so a caller — e.g. the deal
+  /// builder's inline "new car" action — can select it immediately), or
+  /// null on failure (check [state].errorMessage).
+  Future<ItemModel?> addItem(
     ItemsCacheProvider cache,
     ExpiryProvider expiry, {
     required int itemTypeId,
@@ -98,10 +101,10 @@ class ItemsCubit extends Cubit<ItemsState> {
       } else {
         emit(state.copyWith(isSaving: false));
       }
-      return true;
+      return created;
     } on Failure catch (failure) {
       emit(state.copyWith(isSaving: false, errorMessage: failure.message));
-      return false;
+      return null;
     }
   }
 

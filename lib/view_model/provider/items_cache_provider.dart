@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/item_model.dart';
 import '../../model/item_type_model.dart';
+import '../utils/item_category.dart';
 
 /// Shared in-memory items and item types, used by the supplier items tab and
 /// the deal line editor's item cascade.
@@ -24,6 +25,20 @@ class ItemsCacheProvider extends ChangeNotifier {
       if (t.id == id) return t;
     }
     return null;
+  }
+
+  /// Every selectable car, across every supplier (including cars with no
+  /// real supplier) — used by the deal builder's car picker when no
+  /// supplier has been chosen, so the admin can pick a car directly without
+  /// first narrowing by supplier.
+  List<ItemModel> get availableCars {
+    final Set<int> carTypeIds = _types
+        .where((ItemTypeModel t) => categoryOf(t) == ItemCategory.car)
+        .map((ItemTypeModel t) => t.id)
+        .toSet();
+    return _items
+        .where((ItemModel i) => i.isSelectable && carTypeIds.contains(i.itemTypeId))
+        .toList();
   }
 
   List<ItemModel> forSupplier(int supplierId) =>

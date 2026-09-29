@@ -87,10 +87,15 @@ class DealLineInput {
   double get lineCost => unitCost * qty;
   double get lineProfit => lineTotal - lineCost;
 
-  /// Inclusive day count between [rentStart] and [rentEnd], the default for
-  /// a per-day line's [days] before the admin overrides it.
-  static int inclusiveDays(DateTime start, DateTime end) =>
-      end.difference(start).inDays + 1;
+  /// Day count between [rentStart] and [rentEnd] (calendar-date difference,
+  /// not inclusive of both endpoints): 16→17 is 1 day, not 2. The default
+  /// for a per-day line's [days] before the admin overrides it. Never below 1.
+  static int inclusiveDays(DateTime start, DateTime end) {
+    final int diff = DateTime(end.year, end.month, end.day)
+        .difference(DateTime(start.year, start.month, start.day))
+        .inDays;
+    return diff < 1 ? 1 : diff;
+  }
 
   DealLineInput copyWith({
     int? itemId,
@@ -477,6 +482,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         amount: Value<double>(commissionAmount),
         categoryId: Value<int?>(categoryId),
         note: Value<String?>(commissionName),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ));
     }
   }
@@ -594,6 +600,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           occurredAt: dateTime == null
               ? const Value<DateTime>.absent()
               : Value<DateTime>(dateTime),
+          updatedAt: Value<DateTime>(DateTime.now()),
         ),
       );
 
@@ -621,6 +628,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           returnKilometer: Value<double?>(l.returnKilometer),
           extraKmCharge: Value<double?>(l.extraKmCharge),
           lineStatus: Value<String>(l.lineStatus.name),
+          updatedAt: Value<DateTime>(DateTime.now()),
         ));
       }
       if (toInsert.isNotEmpty) {
@@ -723,6 +731,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             : const Value<double?>.absent(),
         extraKmCharge: Value<double?>(extraKmCharge),
         lineStatus: Value<String>(LineStatus.returned.name),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ));
 
       if (extraKmCharge != null && extraKmCharge != 0) {
@@ -735,6 +744,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             .write(TransactionsCompanion(
           subtotal: Value<double>(deal.subtotal + extraKmCharge),
           total: Value<double>(deal.total + extraKmCharge),
+          updatedAt: Value<DateTime>(DateTime.now()),
         ));
       }
     });
@@ -760,11 +770,12 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
       await (update(transactionItems)
             ..where(($TransactionItemsTable t) => t.id.equals(transactionItemId)))
-          .write(const TransactionItemsCompanion(
-        returnKilometer: Value<double?>(null),
-        extraKmRate: Value<double?>(null),
-        extraKmCharge: Value<double?>(null),
-        lineStatus: Value<String>('active'),
+          .write(TransactionItemsCompanion(
+        returnKilometer: const Value<double?>(null),
+        extraKmRate: const Value<double?>(null),
+        extraKmCharge: const Value<double?>(null),
+        lineStatus: const Value<String>('active'),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ));
 
       if (previousCharge != 0) {
@@ -777,6 +788,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             .write(TransactionsCompanion(
           subtotal: Value<double>(deal.subtotal - previousCharge),
           total: Value<double>(deal.total - previousCharge),
+          updatedAt: Value<DateTime>(DateTime.now()),
         ));
       }
     });

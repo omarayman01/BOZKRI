@@ -46,6 +46,11 @@ dependencies:
   equatable: ^2.0.5
   excel: ^4.0.6
 
+  # Online shared database + accounts (Phase 21/22)
+  supabase_flutter: ^2.8.0
+  connectivity_plus: ^6.1.0
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

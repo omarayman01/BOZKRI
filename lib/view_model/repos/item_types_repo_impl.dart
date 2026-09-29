@@ -1,14 +1,16 @@
 import '../../model/item_type_field_model.dart';
 import '../../model/item_type_model.dart';
+import '../database/local/app_database.dart';
 import '../database/local/daos/item_types_dao.dart';
 import '../errors/db_failure.dart';
 import '../errors/error_handler.dart';
 import 'item_types_repo.dart';
 
 class ItemTypesRepoImpl implements ItemTypesRepo {
-  const ItemTypesRepoImpl(this._dao);
+  const ItemTypesRepoImpl(this._dao, this._db);
 
   final ItemTypesDao _dao;
+  final AppDatabase _db;
 
   @override
   Future<List<ItemTypeModel>> getTypes() => guard(_dao.getAllWithFields);
@@ -35,6 +37,7 @@ class ItemTypesRepoImpl implements ItemTypesRepo {
             'This type is used by $used item(s) and cannot be deleted.',
           );
         }
+        await _db.syncLinksDao.recordPendingDeleteIfLinked('item_types', id);
         await _dao.deleteType(id);
       });
 
@@ -59,8 +62,11 @@ class ItemTypesRepoImpl implements ItemTypesRepo {
       guard(() => _dao.updateField(field));
 
   @override
-  Future<void> deleteField(int fieldId) =>
-      guard(() => _dao.deleteField(fieldId));
+  Future<void> deleteField(int fieldId) => guard(() async {
+        await _db.syncLinksDao
+            .recordPendingDeleteIfLinked('item_type_fields', fieldId);
+        await _dao.deleteField(fieldId);
+      });
 
   @override
   Future<void> reorderFields(List<int> orderedFieldIds) =>

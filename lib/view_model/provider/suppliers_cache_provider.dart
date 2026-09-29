@@ -9,10 +9,24 @@ class SuppliersCacheProvider extends ChangeNotifier {
   List<SupplierModel> get suppliers =>
       List<SupplierModel>.unmodifiable(_suppliers);
 
-  List<SupplierModel> get activeSuppliers =>
-      _suppliers.where((SupplierModel s) => s.isActive).toList();
+  /// Excludes the seeded "بوزكري (بدون مورد)" system supplier — it is never
+  /// a real pick in a picker, only ever auto-derived from a supplier-less
+  /// car (see DealLineEditor).
+  List<SupplierModel> get activeSuppliers => _suppliers
+      .where((SupplierModel s) => s.isActive && !s.isSystemSupplier)
+      .toList();
 
   bool get isEmpty => _suppliers.isEmpty;
+
+  /// The seeded "بوزكري (بدون مورد)" supplier's id — used to assign a car
+  /// that has no real supplier. Null only in the brief window before the
+  /// cache is first populated.
+  int? get systemSupplierId {
+    for (final SupplierModel s in _suppliers) {
+      if (s.isSystemSupplier) return s.id;
+    }
+    return null;
+  }
 
   SupplierModel? byId(int id) {
     for (final SupplierModel s in _suppliers) {
@@ -28,8 +42,9 @@ class SuppliersCacheProvider extends ChangeNotifier {
     if (q.isEmpty) return activeSuppliers;
     return _suppliers
         .where((SupplierModel s) =>
-            s.name.toLowerCase().contains(q) ||
-            (s.phone ?? '').toLowerCase().contains(q))
+            !s.isSystemSupplier &&
+            (s.name.toLowerCase().contains(q) ||
+                (s.phone ?? '').toLowerCase().contains(q)))
         .toList();
   }
 

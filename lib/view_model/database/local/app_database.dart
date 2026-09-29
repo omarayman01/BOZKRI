@@ -15,6 +15,7 @@ import 'daos/items_dao.dart';
 import 'daos/payments_dao.dart';
 import 'daos/refunds_dao.dart';
 import 'daos/suppliers_dao.dart';
+import 'daos/sync_links_dao.dart';
 import 'daos/transactions_dao.dart';
 import 'tables.dart';
 
@@ -35,6 +36,8 @@ part 'app_database.g.dart';
     RefundItems,
     ExpenseCategories,
     Expenses,
+    SyncLinks,
+    PendingRemoteDeletes,
   ],
   daos: <Type>[
     ClientsDao,
@@ -46,6 +49,7 @@ part 'app_database.g.dart';
     RefundsDao,
     ExpensesDao,
     DashboardDao,
+    SyncLinksDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -68,13 +72,14 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
           await m.createAll();
           await _seedExpenseCategories();
+          await _seedSystemSupplier();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -107,6 +112,30 @@ class AppDatabase extends _$AppDatabase {
           if (from < 7) {
             await _translateExpenseCategoryDefaults();
           }
+          if (from < 8) {
+            await m.addColumn(suppliers, suppliers.updatedAt);
+            await m.addColumn(clients, clients.updatedAt);
+            await m.addColumn(itemTypes, itemTypes.updatedAt);
+            await m.addColumn(itemTypeFields, itemTypeFields.updatedAt);
+            await m.addColumn(items, items.updatedAt);
+            await m.createTable(syncLinks);
+          }
+          if (from < 9) {
+            await m.addColumn(transactions, transactions.updatedAt);
+            await m.addColumn(transactionItems, transactionItems.updatedAt);
+            await m.addColumn(payments, payments.updatedAt);
+            await m.addColumn(refunds, refunds.updatedAt);
+            await m.addColumn(refundItems, refundItems.updatedAt);
+            await m.addColumn(expenseCategories, expenseCategories.updatedAt);
+            await m.addColumn(expenses, expenses.updatedAt);
+          }
+          if (from < 10) {
+            await m.createTable(pendingRemoteDeletes);
+          }
+          if (from < 11) {
+            await m.addColumn(suppliers, suppliers.isSystemSupplier);
+            await _seedSystemSupplier();
+          }
         },
         beforeOpen: (OpeningDetails details) async {
           // SQLite ignores foreign keys unless explicitly enabled per
@@ -137,6 +166,27 @@ class AppDatabase extends _$AppDatabase {
     for (final String sql in statements) {
       await customStatement(sql);
     }
+  }
+
+  /// The placeholder supplier a car is assigned to when the admin leaves it
+  /// unassigned — lets every existing supplier-required column/query stay
+  /// unchanged (no nullable `supplier_id` anywhere) while still letting a
+  /// car genuinely have "no real supplier". Idempotent: a no-op if it
+  /// already exists, so it's safe to call from both onCreate and onUpgrade.
+  static const String systemSupplierName = 'بوزكري (بدون مورد)';
+
+  Future<void> _seedSystemSupplier() async {
+    final SupplierRow? existing = await (select(suppliers)
+          ..where(($SuppliersTable t) => t.isSystemSupplier.equals(true)))
+        .getSingleOrNull();
+    if (existing != null) return;
+    await into(suppliers).insert(
+      SuppliersCompanion.insert(
+        name: systemSupplierName,
+        createdAt: DateTime.now(),
+        isSystemSupplier: const Value<bool>(true),
+      ),
+    );
   }
 
   Future<void> _seedExpenseCategories() async {

@@ -115,6 +115,15 @@ class _SearchablePicker<T extends Object> extends StatelessWidget {
     }
 
     return Autocomplete<T>(
+      // Flutter's Autocomplete only reads `initialValue` once, when it first
+      // builds its own internal text controller — it never re-reads it on a
+      // later rebuild. Without this key, selecting a value from OUTSIDE the
+      // field itself (e.g. auto-filling the supplier from a chosen car, or
+      // selecting a client just created via the "+" button) updates the
+      // underlying data but leaves the field visually blank/stale. Keying
+      // on the selected value forces Flutter to recreate the Autocomplete
+      // (and its internal controller) whenever it changes externally.
+      key: ValueKey<T?>(selected),
       initialValue: TextEditingValue(
         text: selected == null ? '' : displayOf(selected as T),
       ),

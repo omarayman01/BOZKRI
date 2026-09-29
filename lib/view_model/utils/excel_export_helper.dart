@@ -641,14 +641,18 @@ class ExcelExportHelper {
     return '${two(date.hour)}:${two(date.minute)}';
   }
 
-  /// Inclusive rental day count: the line's billed `days` if set, else
-  /// computed from the rent date range, else blank.
+  /// Rental day count: the line's billed `days` if set, else computed from
+  /// the rent date range (calendar-date difference, not inclusive of both
+  /// endpoints — 16→17 is 1 day), else blank.
   static Object _rentDaysLabel(TransactionItemModel line) {
     if (line.days != null) return line.days!;
     final DateTime? start = line.rentStart;
     final DateTime? end = line.rentEnd;
     if (start == null || end == null || end.isBefore(start)) return '';
-    return end.difference(start).inDays + 1;
+    final int diff = DateTime(end.year, end.month, end.day)
+        .difference(DateTime(start.year, start.month, start.day))
+        .inDays;
+    return diff < 1 ? 1 : diff;
   }
 
   static String _lastPaymentMethodLabel(TransactionWithItemsModel deal) {

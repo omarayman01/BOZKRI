@@ -69,7 +69,10 @@ class ItemTypesDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> renameType(int id, String name) =>
       (update(itemTypes)..where(($ItemTypesTable t) => t.id.equals(id)))
-          .write(ItemTypesCompanion(name: Value<String>(name)));
+          .write(ItemTypesCompanion(
+        name: Value<String>(name),
+        updatedAt: Value<DateTime>(DateTime.now()),
+      ));
 
   Future<int> deleteType(int id) =>
       (delete(itemTypes)..where(($ItemTypesTable t) => t.id.equals(id))).go();
@@ -110,6 +113,7 @@ class ItemTypesDao extends DatabaseAccessor<AppDatabase>
         fieldType: Value<String>(field.fieldType.name),
         isRequired: Value<bool>(field.isRequired),
         sortOrder: Value<int>(field.sortOrder),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ),
     );
   }
@@ -124,7 +128,10 @@ class ItemTypesDao extends DatabaseAccessor<AppDatabase>
       for (int i = 0; i < orderedFieldIds.length; i++) {
         b.update(
           itemTypeFields,
-          ItemTypeFieldsCompanion(sortOrder: Value<int>(i)),
+          ItemTypeFieldsCompanion(
+            sortOrder: Value<int>(i),
+            updatedAt: Value<DateTime>(DateTime.now()),
+          ),
           where: ($ItemTypeFieldsTable t) => t.id.equals(orderedFieldIds[i]),
         );
       }

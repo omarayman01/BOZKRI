@@ -120,23 +120,25 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
     final ExpiryProvider expiry = context.read<ExpiryProvider>();
     final Map<int, String> pruned = DynamicFieldUtils.pruneEmpty(_fieldValues);
 
-    final bool ok = _isEditing
-        ? await cubit.updateItem(
-            cache,
-            expiry,
-            id: widget.item!.id,
-            itemTypeId: _itemTypeId!,
-            supplierId: widget.supplierId,
-            label: _label.text,
-            defaultCost: CurrencyFormatter.parse(_cost.text),
-            defaultPrice: CurrencyFormatter.parse(_price.text),
-            expiryDate: _expiryDate,
-            isSingleUse: _isSingleUse,
-            isAvailable: _isSingleUse ? _isAvailable : true,
-            notes: _notes.text,
-            isActive: _isActive,
-            fieldValues: pruned,
-          )
+    final ItemModel? created = _isEditing
+        ? (await cubit.updateItem(
+                  cache,
+                  expiry,
+                  id: widget.item!.id,
+                  itemTypeId: _itemTypeId!,
+                  supplierId: widget.supplierId,
+                  label: _label.text,
+                  defaultCost: CurrencyFormatter.parse(_cost.text),
+                  defaultPrice: CurrencyFormatter.parse(_price.text),
+                  expiryDate: _expiryDate,
+                  isSingleUse: _isSingleUse,
+                  isAvailable: _isSingleUse ? _isAvailable : true,
+                  notes: _notes.text,
+                  isActive: _isActive,
+                  fieldValues: pruned,
+                )
+                ? widget.item
+                : null)
         : await cubit.addItem(
             cache,
             expiry,
@@ -154,8 +156,8 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
           );
 
     if (!mounted) return;
-    if (ok) {
-      Navigator.of(context).pop(true);
+    if (created != null) {
+      Navigator.of(context).pop(created);
     } else {
       final String? message = cubit.state.errorMessage;
       if (message != null) {

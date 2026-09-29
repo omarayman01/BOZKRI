@@ -24,6 +24,7 @@ import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/loading_widget.dart';
 import '../../core/widgets/party_picker.dart';
 import '../../core/widgets/primary_button.dart';
+import '../clients_features/add_edit_client_screen.dart';
 import 'widgets/deal_line_editor.dart';
 
 /// The deal builder: pick a client, add lines (supplier → item cascade with
@@ -236,6 +237,19 @@ class _AddEditDealScreenState extends State<AddEditDealScreen> {
     );
   }
 
+  /// "+" next to the client field — opens the same Add Client form used
+  /// from the Clients tab, and selects the newly created client for this
+  /// deal on success, without leaving the deal screen.
+  Future<void> _addClientInline(
+      BuildContext context, TransactionDraftProvider draft) async {
+    final ClientModel? created = await Navigator.of(context).push<ClientModel>(
+      MaterialPageRoute<ClientModel>(
+        builder: (_) => const AddEditClientScreen(),
+      ),
+    );
+    if (created != null) draft.setClient(created);
+  }
+
   Widget _header(
     BuildContext context,
     TransactionDraftProvider draft,
@@ -253,11 +267,27 @@ class _AddEditDealScreenState extends State<AddEditDealScreen> {
               children: <Widget>[
                 Expanded(
                   flex: 2,
-                  child: ClientPicker(
-                    clients: clients.activeClients,
-                    selected: draft.client,
-                    onSelected: draft.setClient,
-                    label: l10n.client,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: ClientPicker(
+                          clients: clients.activeClients,
+                          selected: draft.client,
+                          onSelected: draft.setClient,
+                          label: l10n.client,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: IconButton(
+                          tooltip: 'عميل جديد',
+                          icon: const Icon(Icons.add_circle_outline, size: 20),
+                          color: AppColors.primary,
+                          onPressed: () => _addClientInline(context, draft),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 16),

@@ -49,7 +49,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
       AppRoutes.addEditItem,
       arguments: AddEditItemArgs(supplierId: widget.supplierId, item: item),
     );
-    if (saved == true && mounted) await _load();
+    if (saved != null && mounted) await _load();
   }
 
   Future<void> _deleteItem(ItemModel item) async {

@@ -66,18 +66,22 @@ class _AddEditClientScreenState extends State<AddEditClientScreen> {
     final String? nationalId =
         _nationalId.text.trim().isEmpty ? null : _nationalId.text.trim();
 
-    final bool ok = _isEditing
-        ? await cubit.updateClient(
-            cache,
-            widget.client!.copyWith(
-              name: _name.text.trim(),
-              phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
-              notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-              isActive: _isActive,
-              passportId: passportId,
-              nationalId: nationalId,
-            ),
-          )
+    final ClientModel? created = _isEditing
+        ? (await cubit.updateClient(
+                  cache,
+                  widget.client!.copyWith(
+                    name: _name.text.trim(),
+                    phone:
+                        _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+                    notes:
+                        _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+                    isActive: _isActive,
+                    passportId: passportId,
+                    nationalId: nationalId,
+                  ),
+                )
+                ? widget.client
+                : null)
         : await cubit.addClient(
             cache,
             name: _name.text.trim(),
@@ -89,8 +93,8 @@ class _AddEditClientScreenState extends State<AddEditClientScreen> {
           );
 
     if (!mounted) return;
-    if (ok) {
-      Navigator.of(context).pop(true);
+    if (created != null) {
+      Navigator.of(context).pop(created);
     } else {
       final String? message = cubit.state.errorMessage;
       if (message != null) {

@@ -200,7 +200,10 @@ class RefundsDao extends DatabaseAccessor<AppDatabase> with _$RefundsDaoMixin {
 
     await (update(transactions)
           ..where(($TransactionsTable t) => t.id.equals(transactionId)))
-        .write(TransactionsCompanion(status: Value<String>(status.name)));
+        .write(TransactionsCompanion(
+      status: Value<String>(status.name),
+      updatedAt: Value<DateTime>(DateTime.now()),
+    ));
   }
 
   /// Reverses a refund: removes it, restores the deal status and re-consumes

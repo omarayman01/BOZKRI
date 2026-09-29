@@ -11,5 +11,10 @@ class SupplierModel with _$SupplierModel {
     String? notes,
     @Default(true) bool isActive,
     required DateTime createdAt,
+
+    /// True only for the single seeded "بوزكري (بدون مورد)" row used as the
+    /// supplier of a car with no real supplier assigned — never created,
+    /// renamed, or deleted by an admin.
+    @Default(false) bool isSystemSupplier,
   }) = _SupplierModel;
 }

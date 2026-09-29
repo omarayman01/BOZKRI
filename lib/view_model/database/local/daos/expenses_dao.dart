@@ -104,6 +104,7 @@ class ExpensesDao extends DatabaseAccessor<AppDatabase>
         transactionId: Value<int?>(expense.transactionId),
         occurredAt: Value<DateTime>(expense.dateTime),
         note: Value<String?>(expense.note),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ),
     );
   }

@@ -3,15 +3,17 @@ import '../../model/party_balance_model.dart';
 import '../../model/payment_model.dart';
 import '../../model/transaction_item_model.dart';
 import '../../model/transaction_model.dart';
+import '../database/local/app_database.dart';
 import '../database/local/daos/clients_dao.dart';
 import '../errors/db_failure.dart';
 import '../errors/error_handler.dart';
 import 'clients_repo.dart';
 
 class ClientsRepoImpl implements ClientsRepo {
-  const ClientsRepoImpl(this._dao);
+  const ClientsRepoImpl(this._dao, this._db);
 
   final ClientsDao _dao;
+  final AppDatabase _db;
 
   @override
   Future<List<ClientModel>> getClients({bool activeOnly = false}) =>
@@ -51,6 +53,7 @@ class ClientsRepoImpl implements ClientsRepo {
             'deleting, or delete their deals first.',
           );
         }
+        await _db.syncLinksDao.recordPendingDeleteIfLinked('clients', id);
         await _dao.deleteClient(id);
       });
 

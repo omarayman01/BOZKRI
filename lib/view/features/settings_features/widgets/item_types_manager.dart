@@ -7,6 +7,7 @@ import '../../../../model/item_type_model.dart';
 import '../../../../view_model/cubit/item_types/item_types_cubit.dart';
 import '../../../../view_model/cubit/item_types/item_types_state.dart';
 import '../../../../view_model/provider/items_cache_provider.dart';
+import '../../../../view_model/utils/item_category.dart';
 import '../../../../view_model/utils/validators.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_constants.dart';
@@ -45,6 +46,14 @@ class ItemTypesManager extends StatelessWidget {
   }
 
   Future<void> _deleteType(BuildContext context, ItemTypeModel type) async {
+    if (categoryOf(type) == ItemCategory.car) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('لا يمكن حذف صنف "سيارة" — هو الصنف الأساسي الذي '
+            'يعتمد عليه نظام السيارات.'),
+      ));
+      return;
+    }
+
     final bool ok = await ConfirmDialog.show(
       context,
       title: 'حذف "${type.name}"؟',
@@ -199,10 +208,11 @@ class ItemTypesManager extends StatelessWidget {
                                     value: 'rename',
                                     child: Text('إعادة تسمية'),
                                   ),
-                                  const PopupMenuItem<String>(
-                                    value: 'delete',
-                                    child: Text('حذف'),
-                                  ),
+                                  if (categoryOf(type) != ItemCategory.car)
+                                    const PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Text('حذف'),
+                                    ),
                                 ],
                                 onSelected: (String action) =>
                                     action == 'rename'

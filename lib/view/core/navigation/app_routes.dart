@@ -7,11 +7,11 @@ import '../../features/clients_features/client_detail_screen.dart';
 import '../../features/deals_features/add_edit_deal_screen.dart';
 import '../../features/deals_features/deal_detail_screen.dart';
 import '../../features/deals_features/refund_screen.dart';
+import '../../features/auth_features/auth_gate.dart';
 import '../../features/settings_features/settings_screen.dart';
 import '../../features/suppliers_features/add_edit_item_screen.dart';
 import '../../features/suppliers_features/add_edit_supplier_screen.dart';
 import '../../features/suppliers_features/supplier_detail_screen.dart';
-import 'main_shell.dart';
 
 /// Named routes for the pages pushed on top of the persistent shell.
 /// The four primary destinations are tabs inside [MainShell], not routes.
@@ -37,7 +37,7 @@ class AppRoutes {
   static Route<Object?> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case shell:
-        return _page(const MainShell(), settings);
+        return _page(const AuthGate(), settings);
 
       case AppRoutes.settings:
         return _page(const SettingsScreen(), settings);

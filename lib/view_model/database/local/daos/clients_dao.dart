@@ -68,6 +68,7 @@ class ClientsDao extends DatabaseAccessor<AppDatabase> with _$ClientsDaoMixin {
         createdAt: client.createdAt,
         passportId: client.passportId,
         nationalId: client.nationalId,
+        updatedAt: DateTime.now(),
       ),
     );
   }

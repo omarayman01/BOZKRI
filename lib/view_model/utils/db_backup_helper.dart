@@ -45,6 +45,18 @@ class DbBackupHelper {
     return result?.files.single.path;
   }
 
+  /// Opens a file-picker dialog accepting only `.xlsx`, for the dedicated
+  /// "استيراد من إكسل" action — kept separate from [pickRestoreSourceFile]
+  /// so that action can never be confused with a full `.sqlite` restore.
+  static Future<String?> pickXlsxSourceFile() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      dialogTitle: 'اختر ملف إكسل للاستيراد',
+      type: FileType.custom,
+      allowedExtensions: <String>['xlsx'],
+    );
+    return result?.files.single.path;
+  }
+
   /// Resolves [typedPath] (or, if null, whatever the admin already picked
   /// via a folder dialog) into a usable destination directory: creates it
   /// if missing, then verifies it is writable. Throws a clear Arabic

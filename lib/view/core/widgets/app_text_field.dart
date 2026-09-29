@@ -25,6 +25,7 @@ class AppTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffix,
     this.textDirection,
+    this.obscureText = false,
   });
 
   /// Money field: decimal keypad, LTR digits, EGP suffix.
@@ -100,6 +101,7 @@ class AppTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final Widget? suffix;
   final TextDirection? textDirection;
+  final bool obscureText;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +112,8 @@ class AppTextField extends StatelessWidget {
       onChanged: onChanged,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      maxLines: maxLines,
+      maxLines: obscureText ? 1 : maxLines,
+      obscureText: obscureText,
       enabled: enabled,
       autofocus: autofocus,
       textDirection: textDirection,

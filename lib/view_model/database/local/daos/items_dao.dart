@@ -181,6 +181,7 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
           isAvailable: Value<bool>(isAvailable),
           notes: Value<String?>(notes),
           isActive: Value<bool>(isActive),
+          updatedAt: Value<DateTime>(DateTime.now()),
         ),
       );
       await (delete(itemFieldValues)
@@ -225,6 +226,9 @@ class ItemsDao extends DatabaseAccessor<AppDatabase> with _$ItemsDaoMixin {
     return (update(items)
           ..where(($ItemsTable t) =>
               t.id.equals(itemId) & t.isSingleUse.equals(true)))
-        .write(ItemsCompanion(isAvailable: Value<bool>(available)));
+        .write(ItemsCompanion(
+          isAvailable: Value<bool>(available),
+          updatedAt: Value<DateTime>(DateTime.now()),
+        ));
   }
 }

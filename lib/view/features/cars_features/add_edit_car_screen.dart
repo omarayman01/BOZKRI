@@ -99,10 +99,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
 
     setState(() => _fieldErrors = dynamicErrors);
 
-    if (!staticOk ||
-        dynamicErrors.isNotEmpty ||
-        _itemTypeId == null ||
-        _supplierId == null) {
+    if (!staticOk || dynamicErrors.isNotEmpty || _itemTypeId == null) {
       return;
     }
 
@@ -110,27 +107,36 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
     final ExpiryProvider expiry = context.read<ExpiryProvider>();
     final Map<int, String> pruned = DynamicFieldUtils.pruneEmpty(_fieldValues);
 
-    final bool ok = _isEditing
-        ? await cubit.updateItem(
-            cache,
-            expiry,
-            id: widget.car!.id,
-            itemTypeId: _itemTypeId!,
-            supplierId: _supplierId!,
-            label: _label.text,
-            defaultCost: CurrencyFormatter.parse(_cost.text),
-            defaultPrice: CurrencyFormatter.parse(_price.text),
-            isSingleUse: false,
-            isAvailable: true,
-            notes: _notes.text,
-            isActive: _isActive,
-            fieldValues: pruned,
-          )
+    // Leaving the supplier field empty assigns the car to the seeded
+    // "بوزكري (بدون مورد)" placeholder rather than requiring a real one —
+    // a car doesn't have to be rented from a supplier to exist in the fleet.
+    final int? systemSupplierId =
+        context.read<SuppliersCacheProvider>().systemSupplierId;
+    final int effectiveSupplierId = _supplierId ?? systemSupplierId!;
+
+    final ItemModel? created = _isEditing
+        ? (await cubit.updateItem(
+                  cache,
+                  expiry,
+                  id: widget.car!.id,
+                  itemTypeId: _itemTypeId!,
+                  supplierId: effectiveSupplierId,
+                  label: _label.text,
+                  defaultCost: CurrencyFormatter.parse(_cost.text),
+                  defaultPrice: CurrencyFormatter.parse(_price.text),
+                  isSingleUse: false,
+                  isAvailable: true,
+                  notes: _notes.text,
+                  isActive: _isActive,
+                  fieldValues: pruned,
+                )
+                ? widget.car
+                : null)
         : await cubit.addItem(
             cache,
             expiry,
             itemTypeId: _itemTypeId!,
-            supplierId: _supplierId!,
+            supplierId: effectiveSupplierId,
             label: _label.text,
             defaultCost: CurrencyFormatter.parse(_cost.text),
             defaultPrice: CurrencyFormatter.parse(_price.text),
@@ -142,8 +148,8 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
           );
 
     if (!mounted) return;
-    if (ok) {
-      Navigator.of(context).pop(true);
+    if (created != null) {
+      Navigator.of(context).pop(created);
     } else {
       final String? message = cubit.state.errorMessage;
       if (message != null) {
@@ -161,9 +167,15 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
     final SuppliersCacheProvider suppliersCache =
         context.watch<SuppliersCacheProvider>();
     final List<ItemTypeModel> carTypes = _carTypes(itemsCache);
-    final List<ItemTypeFieldModel> schema = _schemaFor(itemsCache);
 
+    // Must run before _schemaFor below: with exactly one car type, no
+    // dropdown ever exists to setState() this via onChanged, so the default
+    // assignment has to land before the schema lookup in this same build —
+    // otherwise the first (and only) build computes the schema while
+    // _itemTypeId is still null, permanently freezing it empty.
     _itemTypeId ??= carTypes.isEmpty ? null : carTypes.first.id;
+
+    final List<ItemTypeFieldModel> schema = _schemaFor(itemsCache);
 
     if (carTypes.isEmpty) {
       return Scaffold(
@@ -224,12 +236,20 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
                       ),
                       const SizedBox(height: 18),
                       SupplierPicker(
-                        suppliers: suppliersCache.suppliers,
+                        label: 'المورد (اختياري)',
+                        suppliers: suppliersCache.activeSuppliers,
                         selected: _supplierId == null
                             ? null
                             : suppliersCache.byId(_supplierId!),
                         onSelected: (SupplierModel? s) =>
                             setState(() => _supplierId = s?.id),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          'اتركه فارغاً إذا كانت السيارة غير تابعة لمورد.',
+                          style: AppTextStyles.caption,
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Row(

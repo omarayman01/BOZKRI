@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../model/item_model.dart';
@@ -15,6 +16,7 @@ import '../../../constants/app_text_styles.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/date_range_picker_field.dart';
 import '../../../core/widgets/party_picker.dart';
+import '../../cars_features/add_edit_car_screen.dart';
 import 'item_availability_indicator.dart';
 
 /// One editable line of the deal builder: supplier → item cascade, auto-filled
@@ -39,6 +41,10 @@ class DealLineEditor extends StatefulWidget {
   State<DealLineEditor> createState() => _DealLineEditorState();
 }
 
+/// Default allowed kilometers per rental day for a car line; the admin can
+/// still edit it freely per deal.
+const double _defaultAllowedKmPerDay = 120;
+
 class _DealLineEditorState extends State<DealLineEditor> {
   late final TextEditingController _qty;
   late final TextEditingController _cost;
@@ -60,8 +66,8 @@ class _DealLineEditorState extends State<DealLineEditor> {
     _costPerDay =
         TextEditingController(text: '${widget.line.costPerDay ?? 0}');
     _days = TextEditingController(text: '${widget.line.days ?? 1}');
-    _allowedKmPerDay =
-        TextEditingController(text: '${widget.line.allowedKmPerDay ?? 0}');
+    _allowedKmPerDay = TextEditingController(
+        text: '${widget.line.allowedKmPerDay ?? _defaultAllowedKmPerDay}');
     _pickupKilometer =
         TextEditingController(text: '${widget.line.pickupKilometer ?? 0}');
   }
@@ -94,9 +100,12 @@ class _DealLineEditorState extends State<DealLineEditor> {
     final double price = widget.line.unitPrice;
     final double cost = widget.line.unitCost;
     final int days = _computedDays() ?? (widget.line.qty > 0 ? widget.line.qty : 1);
+    final double allowedKmPerDay =
+        widget.line.allowedKmPerDay ?? _defaultAllowedKmPerDay;
     _pricePerDay.text = '$price';
     _costPerDay.text = '$cost';
     _days.text = '$days';
+    _allowedKmPerDay.text = '$allowedKmPerDay';
     widget.onChanged(widget.line.copyWith(
       pricePerDay: price,
       costPerDay: cost,
@@ -104,6 +113,7 @@ class _DealLineEditorState extends State<DealLineEditor> {
       unitPrice: price,
       unitCost: cost,
       qty: days,
+      allowedKmPerDay: allowedKmPerDay,
       clearExpiry: true,
     ));
   }
@@ -180,13 +190,15 @@ class _DealLineEditorState extends State<DealLineEditor> {
     widget.onChanged(widget.line.copyWith(rentEnd: newEnd, days: days, qty: days));
   }
 
-  /// Switching supplier clears the item, since items cascade from the supplier.
+  /// Switching supplier clears the item, since items cascade from the
+  /// supplier. Only reachable before an item is chosen — once an item is
+  /// selected, this picker is disabled and the supplier is derived from the
+  /// item instead (see [_onItemChanged]).
   void _onSupplierChanged(SupplierModel? supplier) {
-    if (supplier == null) return;
     widget.onChanged(
       widget.line.copyWith(
-        supplierId: supplier.id,
-        supplierName: supplier.name,
+        supplierId: supplier?.id ?? 0,
+        supplierName: supplier?.name ?? '',
         itemId: 0,
         itemLabel: '',
         isSingleUse: false,
@@ -199,13 +211,19 @@ class _DealLineEditorState extends State<DealLineEditor> {
     _price.text = '0';
   }
 
-  /// Selecting an item auto-fills the editable snapshots and the expiry date.
+  /// Selecting an item auto-fills the editable snapshots, the expiry date,
+  /// and — always — the line's supplier from the item's own supplier. For a
+  /// car with no real supplier this is the seeded "بوزكري (بدون مورد)"
+  /// placeholder; either way the supplier field locks once an item is set,
+  /// since the line's supplier is never independent of which item it is.
   void _onItemChanged(ItemModel? item) {
     if (item == null) return;
     widget.onChanged(
       widget.line.copyWith(
         itemId: item.id,
         itemLabel: item.label,
+        supplierId: item.supplierId,
+        supplierName: item.supplierName ?? '',
         isSingleUse: item.isSingleUse,
         unitCost: item.defaultCost ?? 0,
         unitPrice: item.defaultPrice ?? 0,
@@ -219,6 +237,22 @@ class _DealLineEditorState extends State<DealLineEditor> {
     _price.text = '${item.defaultPrice ?? 0}';
   }
 
+  /// A new item was just created inline (see the "+" button next to the item
+  /// dropdown) — select it immediately, same as picking it from the list.
+  void _onItemCreated(ItemModel item) => _onItemChanged(item);
+
+  /// "+" next to the item dropdown when no supplier is chosen — opens the
+  /// same Add Car form used from the Cars tab, with its supplier field
+  /// optional, and selects the newly created car for this line on success.
+  Future<void> _addCarInline(BuildContext context) async {
+    final ItemModel? created = await Navigator.of(context).push<ItemModel>(
+      MaterialPageRoute<ItemModel>(
+        builder: (_) => const AddEditCarScreen(),
+      ),
+    );
+    if (created != null) _onItemCreated(created);
+  }
+
   @override
   Widget build(BuildContext context) {
     final SuppliersCacheProvider suppliersCache =
@@ -227,14 +261,20 @@ class _DealLineEditorState extends State<DealLineEditor> {
 
     final SupplierModel? supplier =
         suppliersCache.byId(widget.line.supplierId);
+    final ItemModel? selectedItem = itemsCache.byId(widget.line.itemId);
 
     // The picker only offers selectable items — this is the first half of the
     // dual enforcement; the commit transaction re-checks availability.
+    //
+    // With no supplier chosen yet, the item dropdown surfaces every
+    // available car (across every supplier, including supplier-less ones)
+    // rather than staying empty — this is what lets the admin pick a car
+    // directly without picking a supplier first. Once a supplier IS chosen
+    // (the old flow, still used for apartments/flights/etc.), it narrows to
+    // that supplier's own items as before.
     final List<ItemModel> items = supplier == null
-        ? const <ItemModel>[]
+        ? itemsCache.availableCars
         : itemsCache.availableForSupplier(supplier.id);
-
-    final ItemModel? selectedItem = itemsCache.byId(widget.line.itemId);
 
     // Keep an already-committed item visible when editing, even if consumed.
     final List<ItemModel> options = <ItemModel>[
@@ -275,40 +315,55 @@ class _DealLineEditorState extends State<DealLineEditor> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
-                child: SupplierPicker(
-                  suppliers: suppliersCache.activeSuppliers,
-                  selected: supplier,
-                  onSelected: _onSupplierChanged,
-                ),
+                // Once an item is chosen, the supplier is derived from it
+                // (see _onItemChanged) and shown read-only here — a plain
+                // display, not the interactive picker, since Autocomplete's
+                // own text field never refreshes from an external value
+                // change (only from the user actually picking an option),
+                // so it would otherwise keep showing stale/blank text after
+                // a car auto-fills its supplier.
+                child: widget.line.itemId == 0
+                    ? SupplierPicker(
+                        suppliers: suppliersCache.activeSuppliers,
+                        selected: supplier,
+                        onSelected: _onSupplierChanged,
+                      )
+                    : InputDecorator(
+                        decoration: const InputDecoration(labelText: 'المورد'),
+                        child: Text(
+                          supplier?.name ?? '',
+                          style: AppTextStyles.body,
+                        ),
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: DropdownButtonFormField<int>(
-                  value: widget.line.itemId == 0
-                      ? null
-                      : widget.line.itemId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'العنصر',
-                    helperText: supplier == null
-                        ? 'اختر المورد أولاً'
-                        : options.isEmpty
-                            ? 'لا توجد عناصر متاحة لهذا المورد'
-                            : null,
-                  ),
-                  items: options
-                      .map((ItemModel i) => DropdownMenuItem<int>(
-                            value: i.id,
-                            child: Text(
-                              i.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: supplier == null
-                      ? null
-                      : (int? id) {
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: widget.line.itemId == 0 ? null : widget.line.itemId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: 'العنصر',
+                          helperText: options.isEmpty
+                              ? (supplier == null
+                                  ? 'لا توجد سيارات متاحة'
+                                  : 'لا توجد عناصر متاحة لهذا المورد')
+                              : null,
+                        ),
+                        items: options
+                            .map((ItemModel i) => DropdownMenuItem<int>(
+                                  value: i.id,
+                                  child: Text(
+                                    i.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (int? id) {
                           for (final ItemModel option in options) {
                             if (option.id == id) {
                               _onItemChanged(option);
@@ -316,6 +371,19 @@ class _DealLineEditorState extends State<DealLineEditor> {
                             }
                           }
                         },
+                      ),
+                    ),
+                    if (supplier == null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4, top: 4),
+                        child: IconButton(
+                          tooltip: 'سيارة جديدة',
+                          icon: const Icon(Icons.add_circle_outline, size: 20),
+                          color: AppColors.primary,
+                          onPressed: () => _addCarInline(context),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -453,10 +521,20 @@ class _DealLineEditorState extends State<DealLineEditor> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    AppTextField.money(
+                    AppTextField(
                       label: 'الكيلومترات المسموحة باليوم',
                       controller: _allowedKmPerDay,
                       enabled: !widget.line.isReturned,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      textDirection: TextDirection.ltr,
+                      suffix: const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Text('كم', style: AppTextStyles.caption),
+                      ),
                       onChanged: (String raw) => _setAllowedKmPerDay(
                           CurrencyFormatter.parse(raw) ?? 0),
                     ),

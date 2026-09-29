@@ -30,7 +30,10 @@ class ClientsCubit extends Cubit<ClientsState> {
 
   void search(String query) => emit(state.copyWith(query: query));
 
-  Future<bool> addClient(
+  /// Returns the created client on success (so a caller — e.g. the deal
+  /// builder's inline "new client" action — can select it immediately), or
+  /// null on failure (check [state].errorMessage).
+  Future<ClientModel?> addClient(
     ClientsCacheProvider cache, {
     required String name,
     String? phone,
@@ -62,10 +65,10 @@ class ClientsCubit extends Cubit<ClientsState> {
       } else {
         emit(state.copyWith(isSaving: false));
       }
-      return true;
+      return created;
     } on Failure catch (failure) {
       emit(state.copyWith(isSaving: false, errorMessage: failure.message));
-      return false;
+      return null;
     }
   }
 

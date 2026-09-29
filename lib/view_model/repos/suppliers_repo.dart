@@ -16,6 +16,10 @@ abstract class SuppliersRepo {
   Future<void> updateSupplier(SupplierModel supplier);
   Future<void> deleteSupplier(int id);
 
+  /// The seeded "بوزكري (بدون مورد)" supplier used when a car has no real
+  /// supplier assigned.
+  Future<int> getSystemSupplierId();
+
   Future<List<ItemModel>> getSupplierItems(int supplierId,
       {bool activeOnly = false});
   Future<List<SupplierTransactionSlice>> getSupplierTransactions(int supplierId);

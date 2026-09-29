@@ -29,7 +29,7 @@ class ClientsScreen extends StatelessWidget {
   Future<void> _openForm(BuildContext context, [ClientModel? client]) async {
     final Object? saved = await Navigator.of(context)
         .pushNamed(AppRoutes.addEditClient, arguments: client);
-    if (saved == true && context.mounted) await _reload(context);
+    if (saved != null && context.mounted) await _reload(context);
   }
 
   Future<void> _confirmDelete(BuildContext context, ClientModel client) async {

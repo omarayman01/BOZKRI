@@ -23,10 +23,14 @@ class SuppliersState extends Equatable {
   bool get isFailure => status == SuppliersStatus.failure;
   bool get isEmpty => status == SuppliersStatus.success && suppliers.isEmpty;
 
+  /// Never lists the seeded "بوزكري (بدون مورد)" system supplier — it isn't
+  /// a real business supplier to manage from this screen.
   List<SupplierModel> get visibleSuppliers {
-    if (query.trim().isEmpty) return suppliers;
+    final List<SupplierModel> real =
+        suppliers.where((SupplierModel s) => !s.isSystemSupplier).toList();
+    if (query.trim().isEmpty) return real;
     final String q = query.trim().toLowerCase();
-    return suppliers
+    return real
         .where((SupplierModel s) =>
             s.name.toLowerCase().contains(q) ||
             (s.phone ?? '').toLowerCase().contains(q))

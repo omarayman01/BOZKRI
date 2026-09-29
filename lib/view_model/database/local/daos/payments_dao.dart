@@ -91,8 +91,12 @@ class PaymentsDao extends DatabaseAccessor<AppDatabase>
     if (row.voided) {
       throw const ConstraintFailure('This payment was already voided.');
     }
-    await (update(payments)..where(($PaymentsTable t) => t.id.equals(id)))
-        .write(const PaymentsCompanion(voided: Value<bool>(true)));
+    await (update(payments)..where(($PaymentsTable t) => t.id.equals(id))).write(
+      PaymentsCompanion(
+        voided: const Value<bool>(true),
+        updatedAt: Value<DateTime>(DateTime.now()),
+      ),
+    );
   }
 
   /// Rental days already paid on one line, one row per day — used to render
@@ -120,6 +124,7 @@ class PaymentsDao extends DatabaseAccessor<AppDatabase>
         amount: Value<double>(payment.amount),
         occurredAt: Value<DateTime>(payment.dateTime),
         notes: Value<String?>(payment.notes),
+        updatedAt: Value<DateTime>(DateTime.now()),
       ),
     );
   }

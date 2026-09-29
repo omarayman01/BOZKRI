@@ -35,6 +35,7 @@ extension SupplierRowMapper on SupplierRow {
         notes: notes,
         isActive: isActive,
         createdAt: createdAt,
+        isSystemSupplier: isSystemSupplier,
       );
 }
 

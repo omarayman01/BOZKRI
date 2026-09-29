@@ -3,11 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'l10n/app_localizations.dart';
 import 'view/constants/app_constants.dart';
 import 'view/constants/app_theme.dart';
 import 'view/core/navigation/app_routes.dart';
+import 'view/core/widgets/network_activity_indicator.dart';
+import 'view_model/config/supabase_config.dart';
+import 'view_model/cubit/accounts/accounts_cubit.dart';
+import 'view_model/cubit/auth/auth_cubit.dart';
 import 'view_model/cubit/clients/client_detail_cubit.dart';
 import 'view_model/cubit/clients/clients_cubit.dart';
 import 'view_model/cubit/dashboard/dashboard_cubit.dart';
@@ -18,15 +23,23 @@ import 'view_model/cubit/items/items_cubit.dart';
 import 'view_model/cubit/payments/payments_cubit.dart';
 import 'view_model/cubit/refund/refund_cubit.dart';
 import 'view_model/cubit/settings/settings_cubit.dart';
+import 'view_model/cubit/sync/sync_cubit.dart';
 import 'view_model/cubit/suppliers/supplier_detail_cubit.dart';
 import 'view_model/cubit/suppliers/suppliers_cubit.dart';
 import 'view_model/database/local/app_database.dart';
 import 'view_model/provider/clients_cache_provider.dart';
+import 'view_model/provider/connectivity_provider.dart';
+import 'view_model/provider/current_user_provider.dart';
+import 'view_model/provider/network_activity_provider.dart';
 import 'view_model/provider/expiry_provider.dart';
 import 'view_model/provider/items_cache_provider.dart';
 import 'view_model/provider/settings_provider.dart';
 import 'view_model/provider/suppliers_cache_provider.dart';
 import 'view_model/provider/transaction_draft_provider.dart';
+import 'view_model/repos/accounts_repo.dart';
+import 'view_model/repos/accounts_repo_impl.dart';
+import 'view_model/repos/auth_repo.dart';
+import 'view_model/repos/auth_repo_impl.dart';
 import 'view_model/repos/clients_repo.dart';
 import 'view_model/repos/clients_repo_impl.dart';
 import 'view_model/repos/dashboard_repo.dart';
@@ -45,6 +58,8 @@ import 'view_model/repos/suppliers_repo.dart';
 import 'view_model/repos/suppliers_repo_impl.dart';
 import 'view_model/repos/transactions_repo.dart';
 import 'view_model/repos/transactions_repo_impl.dart';
+import 'view_model/sync/sync_engine.dart';
+import 'view_model/sync/tracking_http_client.dart';
 
 /// Single composition root. There is no DI container: the database, the
 /// repositories, the providers and the cubits are all constructed here and
@@ -55,22 +70,36 @@ import 'view_model/repos/transactions_repo_impl.dart';
 Future<Widget> startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final NetworkActivityProvider networkActivity = NetworkActivityProvider();
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.anonKey,
+    httpClient: TrackingHttpClient(networkActivity),
+  );
+
   final AppDatabase database = await AppDatabase.open();
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   // ---- Repositories (constructed from the live database) ----
-  final ClientsRepo clientsRepo = ClientsRepoImpl(database.clientsDao);
-  final SuppliersRepo suppliersRepo = SuppliersRepoImpl(database.suppliersDao);
-  final ItemTypesRepo itemTypesRepo = ItemTypesRepoImpl(database.itemTypesDao);
-  final ItemsRepo itemsRepo = ItemsRepoImpl(database.itemsDao);
+  final AuthRepo authRepo = AuthRepoImpl(Supabase.instance.client);
+  final AccountsRepo accountsRepo = AccountsRepoImpl(Supabase.instance.client);
+  final ClientsRepo clientsRepo = ClientsRepoImpl(database.clientsDao, database);
+  final SuppliersRepo suppliersRepo =
+      SuppliersRepoImpl(database.suppliersDao, database);
+  final ItemTypesRepo itemTypesRepo =
+      ItemTypesRepoImpl(database.itemTypesDao, database);
+  final ItemsRepo itemsRepo = ItemsRepoImpl(database.itemsDao, database);
   final TransactionsRepo transactionsRepo =
       TransactionsRepoImpl(database.transactionsDao);
   final PaymentsRepo paymentsRepo = PaymentsRepoImpl(database.paymentsDao);
   final RefundsRepo refundsRepo = RefundsRepoImpl(database.refundsDao);
-  final ExpensesRepo expensesRepo = ExpensesRepoImpl(database.expensesDao);
+  final ExpensesRepo expensesRepo =
+      ExpensesRepoImpl(database.expensesDao, database);
   final DashboardRepo dashboardRepo = DashboardRepoImpl(database.dashboardDao);
 
   // ---- Providers (shared in-memory state) ----
+  final CurrentUserProvider currentUserProvider = CurrentUserProvider();
+  final ConnectivityProvider connectivityProvider = ConnectivityProvider();
   final SettingsProvider settingsProvider = SettingsProvider(prefs);
   final ClientsCacheProvider clientsCache = ClientsCacheProvider();
   final SuppliersCacheProvider suppliersCache = SuppliersCacheProvider();
@@ -80,6 +109,12 @@ Future<Widget> startApp() async {
   final TransactionDraftProvider draftProvider = TransactionDraftProvider();
 
   // ---- Cubits (async / DB I/O) ----
+  final AuthCubit authCubit = AuthCubit(authRepo, currentUserProvider);
+  final AccountsCubit accountsCubit = AccountsCubit(accountsRepo);
+  final SyncEngine syncEngine =
+      SyncEngine(database, Supabase.instance.client, currentUserProvider);
+  final SyncCubit syncCubit =
+      SyncCubit(syncEngine, connectivityProvider, authCubit);
   final ClientsCubit clientsCubit = ClientsCubit(clientsRepo);
   final ClientDetailCubit clientDetailCubit = ClientDetailCubit(clientsRepo);
   final SuppliersCubit suppliersCubit = SuppliersCubit(suppliersRepo);
@@ -100,11 +135,18 @@ Future<Widget> startApp() async {
     clientsRepo: clientsRepo,
     suppliersRepo: suppliersRepo,
     expensesRepo: expensesRepo,
+    syncEngine: syncEngine,
   );
 
   return MultiProvider(
     providers: <SingleChildWidget>[
       Provider<AppDatabase>.value(value: database),
+      ChangeNotifierProvider<CurrentUserProvider>.value(
+          value: currentUserProvider),
+      ChangeNotifierProvider<ConnectivityProvider>.value(
+          value: connectivityProvider),
+      ChangeNotifierProvider<NetworkActivityProvider>.value(
+          value: networkActivity),
       ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
       ChangeNotifierProvider<ClientsCacheProvider>.value(value: clientsCache),
       ChangeNotifierProvider<SuppliersCacheProvider>.value(
@@ -113,6 +155,9 @@ Future<Widget> startApp() async {
       ChangeNotifierProvider<ExpiryProvider>.value(value: expiryProvider),
       ChangeNotifierProvider<TransactionDraftProvider>.value(
           value: draftProvider),
+      BlocProvider<AuthCubit>.value(value: authCubit),
+      BlocProvider<AccountsCubit>.value(value: accountsCubit),
+      BlocProvider<SyncCubit>.value(value: syncCubit),
       BlocProvider<ClientsCubit>.value(value: clientsCubit),
       BlocProvider<ClientDetailCubit>.value(value: clientDetailCubit),
       BlocProvider<SuppliersCubit>.value(value: suppliersCubit),
@@ -148,7 +193,17 @@ class AgencyApp extends StatelessWidget {
       builder: (BuildContext context, Widget? child) {
         return Directionality(
           textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
+          child: Stack(
+            children: <Widget>[
+              child ?? const SizedBox.shrink(),
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: NetworkActivityIndicator(),
+              ),
+            ],
+          ),
         );
       },
     );

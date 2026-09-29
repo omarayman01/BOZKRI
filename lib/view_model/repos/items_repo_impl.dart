@@ -1,13 +1,15 @@
 import '../../model/item_model.dart';
+import '../database/local/app_database.dart';
 import '../database/local/daos/items_dao.dart';
 import '../errors/db_failure.dart';
 import '../errors/error_handler.dart';
 import 'items_repo.dart';
 
 class ItemsRepoImpl implements ItemsRepo {
-  const ItemsRepoImpl(this._dao);
+  const ItemsRepoImpl(this._dao, this._db);
 
   final ItemsDao _dao;
+  final AppDatabase _db;
 
   @override
   Future<List<ItemModel>> getItems({bool activeOnly = false}) =>
@@ -95,6 +97,7 @@ class ItemsRepoImpl implements ItemsRepo {
             'so past figures stay intact.',
           );
         }
+        await _db.syncLinksDao.recordPendingDeleteIfLinked('items', id);
         await _dao.deleteItem(id);
       });
 

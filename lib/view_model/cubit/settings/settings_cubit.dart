@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
@@ -12,6 +15,7 @@ import '../../repos/item_types_repo.dart';
 import '../../repos/items_repo.dart';
 import '../../repos/suppliers_repo.dart';
 import '../../repos/transactions_repo.dart';
+import '../../sync/sync_engine.dart';
 import '../../utils/db_backup_helper.dart';
 import '../../utils/excel_export_helper.dart';
 import '../../utils/excel_import_helper.dart';
@@ -30,12 +34,14 @@ class SettingsCubit extends Cubit<SettingsState> {
     required ClientsRepo clientsRepo,
     required SuppliersRepo suppliersRepo,
     required ExpensesRepo expensesRepo,
+    SyncEngine? syncEngine,
   })  : _transactionsRepo = transactionsRepo,
         _itemsRepo = itemsRepo,
         _itemTypesRepo = itemTypesRepo,
         _clientsRepo = clientsRepo,
         _suppliersRepo = suppliersRepo,
         _expensesRepo = expensesRepo,
+        _syncEngine = syncEngine,
         super(const SettingsState());
 
   final AppDatabase _database;
@@ -46,6 +52,12 @@ class SettingsCubit extends Cubit<SettingsState> {
   final SuppliersRepo _suppliersRepo;
   final ExpensesRepo _expensesRepo;
 
+  /// Null only in tests — the composition root always provides one. Used to
+  /// push freshly imported master data to Supabase right away (rather than
+  /// waiting for the next periodic sync) and to wipe the shared database
+  /// when the admin resets the system locally.
+  final SyncEngine? _syncEngine;
+
   /// Updates the expiry-warning window and re-flags items immediately.
   Future<void> setExpiryWarningDays(
     SettingsProvider settings,
@@ -54,6 +66,60 @@ class SettingsCubit extends Cubit<SettingsState> {
   ) async {
     await settings.setExpiryWarningDays(days);
     expiry.setWarningDays(settings.expiryWarningDays);
+  }
+
+  /// Writes only the `.xlsx` report — no `.sqlite` file, no closing the live
+  /// database connection, no app restart needed afterward. A lighter-weight
+  /// alternative to [backup] for admins who just want a spreadsheet copy of
+  /// the current data.
+  Future<void> exportExcel({String? typedPath}) async {
+    String? destinationPath = typedPath?.trim();
+    if (destinationPath == null || destinationPath.isEmpty) {
+      destinationPath = await DbBackupHelper.pickBackupDestinationFolder();
+      if (destinationPath == null) return; // cancelled, no dialog shown
+    }
+
+    emit(state.copyWith(
+      status: SettingsStatus.working,
+      action: SettingsAction.excelExport,
+      step: SettingsStep.writingExcel,
+      clearError: true,
+      clearMessage: true,
+    ));
+    try {
+      final Directory destination =
+          await DbBackupHelper.resolveDestination(destinationPath);
+      final String excelPath = await ExcelExportHelper.exportEndOfDayWorkbook(
+        destinationFolder: destination.path,
+        at: DateTime.now(),
+        transactionsRepo: _transactionsRepo,
+        itemsRepo: _itemsRepo,
+        itemTypesRepo: _itemTypesRepo,
+        clientsRepo: _clientsRepo,
+        suppliersRepo: _suppliersRepo,
+        expensesRepo: _expensesRepo,
+      );
+      emit(state.copyWith(
+        status: SettingsStatus.success,
+        action: SettingsAction.excelExport,
+        step: SettingsStep.none,
+        lastExcelPath: excelPath,
+        message: 'تم الحفظ في:\n$excelPath',
+        requiresRestart: false,
+      ));
+    } on Failure catch (failure) {
+      emit(state.copyWith(
+        status: SettingsStatus.failure,
+        step: SettingsStep.none,
+        errorMessage: failure.message,
+      ));
+    } catch (error) {
+      emit(state.copyWith(
+        status: SettingsStatus.failure,
+        step: SettingsStep.none,
+        errorMessage: ErrorHandler.map(error).message,
+      ));
+    }
   }
 
   /// Writes a `.sqlite` backup and a matching `.xlsx` report to
@@ -197,10 +263,16 @@ class SettingsCubit extends Cubit<SettingsState> {
         itemTypesRepo: _itemTypesRepo,
       );
 
+      // Push the freshly imported rows to Supabase right away rather than
+      // waiting for the next periodic sync — best-effort: an offline or
+      // failed push here just leaves them queued for the normal sync cycle.
+      unawaited(_syncEngine?.syncAll());
+
       final String summaryText = 'تم استيراد بيانات أساسية من '
           '${p.basename(sourcePath)}: ${summary.totalCreated} عنصر جديد، '
           '${summary.totalUpdated} عنصر محدث (عملاء/موردين/أنواع أصناف '
-          'وحقولها/سيارات فقط — لم يتم استيراد صفقات أو دفعات أو أرصدة).';
+          'وحقولها/سيارات فقط — لم يتم استيراد صفقات أو دفعات أو أرصدة). '
+          'جارٍ رفعها إلى قاعدة البيانات المشتركة الآن.';
 
       emit(state.copyWith(
         status: SettingsStatus.success,
@@ -241,11 +313,26 @@ class SettingsCubit extends Cubit<SettingsState> {
     ));
     try {
       await _database.resetAllData();
+
+      String message = 'تم إعادة تعيين النظام.';
+      if (_syncEngine != null) {
+        try {
+          await _syncEngine.wipeRemoteData();
+          message = 'تم إعادة تعيين النظام محلياً وعلى قاعدة البيانات '
+              'المشتركة (Supabase).';
+        } catch (_) {
+          message = 'تم إعادة تعيين النظام محلياً، لكن تعذر مسح البيانات من '
+              'قاعدة البيانات المشتركة (تحقق من الاتصال بالإنترنت) — اضغط '
+              'إعادة تعيين النظام مرة أخرى لإكمال المسح على القاعدة '
+              'المشتركة.';
+        }
+      }
+
       emit(state.copyWith(
         status: SettingsStatus.success,
         action: SettingsAction.reset,
         step: SettingsStep.none,
-        message: 'تم إعادة تعيين النظام.',
+        message: message,
         requiresRestart: false,
       ));
       return true;

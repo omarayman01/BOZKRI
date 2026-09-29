@@ -11,7 +11,10 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_constants.dart';
 import '../../constants/app_text_styles.dart';
 import '../../core/widgets/blocking_progress_overlay.dart';
+import 'widgets/account_tile.dart';
 import 'widgets/backup_tile.dart';
+import 'widgets/excel_export_tile.dart';
+import 'widgets/excel_import_tile.dart';
 import 'widgets/item_types_manager.dart';
 import 'widgets/reset_system_tile.dart';
 import 'widgets/restore_tile.dart';
@@ -61,9 +64,15 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: const <Widget>[
+                      _Section(child: AccountTile()),
+                      SizedBox(height: 20),
                       _Section(child: _ExpiryWindowSetting()),
                       SizedBox(height: 20),
                       _Section(child: ItemTypesManager()),
+                      SizedBox(height: 20),
+                      _Section(child: ExcelExportTile()),
+                      SizedBox(height: 20),
+                      _Section(child: ExcelImportTile()),
                       SizedBox(height: 20),
                       _Section(child: BackupTile()),
                       SizedBox(height: 20),
